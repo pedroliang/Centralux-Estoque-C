@@ -1,0 +1,1107 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Centralux Estoque C</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root {
+    --bg:           #0b0f17;
+    --bg-soft:      #121826;
+    --bg-card:      #161d2d;
+    --bg-hover:     #1d2538;
+    --border:       #232c42;
+    --text:         #e6ebf5;
+    --text-dim:     #8892a8;
+    --primary:      #4f8cff;
+    --primary-dark: #3a6fd8;
+    --success:      #22c55e;
+    --danger:       #ef4444;
+    --warning:      #f59e0b;
+    --accent:       #a855f7;
+    --shadow:       0 10px 30px rgba(0,0,0,.35);
+    --radius:       12px;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, sans-serif;
+    background: radial-gradient(1200px 600px at 10% -10%, #1a2238 0%, var(--bg) 55%) fixed, var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+  /* ---------- Header ---------- */
+  header {
+    position: sticky; top: 0; z-index: 50;
+    backdrop-filter: blur(12px);
+    background: rgba(11,15,23,.75);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 28px;
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 16px; flex-wrap: wrap;
+  }
+  .brand { display: flex; align-items: center; gap: 12px; }
+  .logo {
+    width: 40px; height: 40px; border-radius: 10px;
+    background: linear-gradient(135deg, var(--primary), var(--accent));
+    display: grid; place-items: center; font-weight: 800; color: #fff;
+    box-shadow: 0 6px 18px rgba(79,140,255,.35);
+  }
+  .brand h1 { margin: 0; font-size: 18px; letter-spacing: .3px; }
+  .brand small { display: block; color: var(--text-dim); font-size: 11px; font-weight: 500; }
+  .header-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+  /* ---------- Layout ---------- */
+  main {
+    max-width: 1400px; margin: 0 auto;
+    padding: 24px 28px 80px;
+    display: grid; gap: 20px;
+  }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  @media (max-width: 900px) { .grid-2 { grid-template-columns: 1fr; } }
+
+  .card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    box-shadow: var(--shadow);
+  }
+  .card h2 {
+    margin: 0 0 16px 0; font-size: 15px;
+    letter-spacing: .4px; text-transform: uppercase;
+    color: var(--text-dim); font-weight: 600;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .card h2 .dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--primary);
+  }
+  /* ---------- Stats ---------- */
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+  @media (max-width: 700px) { .stats { grid-template-columns: repeat(2, 1fr); } }
+  .stat {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px 18px;
+    position: relative;
+    overflow: hidden;
+  }
+  .stat::after {
+    content: ""; position: absolute; inset: auto -20% -60% auto;
+    width: 140px; height: 140px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(79,140,255,.18), transparent 70%);
+  }
+  .stat .label {
+    font-size: 11px; text-transform: uppercase;
+    letter-spacing: .8px; color: var(--text-dim);
+  }
+  .stat .value { font-size: 28px; font-weight: 700; margin-top: 4px; }
+  .stat.v1 { border-top: 3px solid var(--primary); }
+  .stat.v2 { border-top: 3px solid var(--success); }
+  .stat.v3 { border-top: 3px solid var(--warning); }
+  .stat.v4 { border-top: 3px solid var(--accent); }
+
+  /* ---------- Form ---------- */
+  .form-grid {
+    display: grid; grid-template-columns: 1.2fr .6fr 1fr auto; gap: 12px;
+    align-items: end;
+  }
+  @media (max-width: 800px) { .form-grid { grid-template-columns: 1fr; } }
+  label {
+    display: block; font-size: 12px; text-transform: uppercase;
+    letter-spacing: .6px; color: var(--text-dim);
+    margin-bottom: 6px; font-weight: 600;
+  }
+  input, textarea, select {
+    width: 100%;
+    background: var(--bg-soft);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 14px;
+    color: var(--text);
+    font-size: 14px;
+    outline: none;
+    transition: border-color .15s, box-shadow .15s, background .15s;
+    font-family: inherit;
+  }
+  input:focus, textarea:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(79,140,255,.18);
+    background: #10172a;
+  }
+  textarea { resize: vertical; min-height: 120px; font-family: "SFMono-Regular", Consolas, Monaco, monospace; font-size: 13px; }
+  .desc-display {
+    background: var(--bg-soft);
+    border: 1px dashed var(--border);
+    border-radius: 10px;
+    padding: 10px 14px;
+    min-height: 44px;
+    font-size: 13px;
+    color: var(--text-dim);
+    display: flex; align-items: center; gap: 8px;
+    margin-top: 10px;
+  }
+  .desc-display.found { border-style: solid; border-color: rgba(34,197,94,.4); color: var(--text); background: rgba(34,197,94,.05); }
+  .desc-display.notfound { border-color: rgba(239,68,68,.4); color: #fca5a5; background: rgba(239,68,68,.05); }
+  .desc-display.loading { color: var(--text-dim); }
+  .desc-display .pill {
+    font-size: 10px; text-transform: uppercase; letter-spacing: .6px;
+    padding: 3px 8px; border-radius: 999px; font-weight: 700;
+    background: rgba(255,255,255,.06);
+  }
+  .desc-display.found .pill { background: rgba(34,197,94,.15); color: #4ade80; }
+  .desc-display.notfound .pill { background: rgba(239,68,68,.15); color: #fca5a5; }
+
+  /* ---------- Buttons ---------- */
+  button, .btn {
+    border: none;
+    border-radius: 10px;
+    padding: 11px 18px;
+    font-size: 14px; font-weight: 600;
+    cursor: pointer;
+    display: inline-flex; align-items: center; gap: 8px;
+    transition: transform .08s, background .15s, box-shadow .15s, border-color .15s;
+    font-family: inherit;
+  }
+  button:active { transform: translateY(1px); }
+  .btn-primary { background: linear-gradient(135deg, var(--primary), var(--primary-dark)); color: #fff; box-shadow: 0 6px 14px rgba(79,140,255,.3); }
+  .btn-primary:hover { box-shadow: 0 8px 20px rgba(79,140,255,.45); }
+  .btn-ghost { background: transparent; color: var(--text); border: 1px solid var(--border); }
+  .btn-ghost:hover { background: var(--bg-hover); border-color: #2c3956; }
+  .btn-success { background: var(--success); color: #fff; }
+  .btn-success:hover { background: #16a34a; }
+  .btn-danger { background: transparent; color: #fca5a5; border: 1px solid rgba(239,68,68,.3); }
+  .btn-danger:hover { background: rgba(239,68,68,.12); }
+  .btn-icon {
+    padding: 8px; border-radius: 8px;
+    background: transparent; color: var(--text-dim);
+  }
+  .btn-icon:hover { background: var(--bg-hover); color: var(--text); }
+  .btn-sm { padding: 7px 12px; font-size: 12px; }
+
+  /* ---------- Search ---------- */
+  .search-row {
+    display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 12px;
+  }
+  @media (max-width: 800px) { .search-row { grid-template-columns: 1fr; } }
+
+  /* ---------- Table ---------- */
+  .table-wrap { overflow-x: auto; border-radius: 10px; border: 1px solid var(--border); }
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  thead th {
+    text-align: left; padding: 12px 14px;
+    font-size: 11px; text-transform: uppercase; letter-spacing: .8px;
+    color: var(--text-dim); background: var(--bg-soft);
+    border-bottom: 1px solid var(--border);
+    position: sticky; top: 0; z-index: 1;
+    cursor: pointer; user-select: none;
+  }
+  thead th:hover { color: var(--text); }
+  tbody td { padding: 12px 14px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+  tbody tr { transition: background .1s; }
+  tbody tr:hover { background: var(--bg-hover); }
+  tbody tr:last-child td { border-bottom: none; }
+  .code-cell { font-family: "SFMono-Regular", Consolas, Monaco, monospace; color: #cbd5ff; font-weight: 600; }
+  .qty-badge {
+    display: inline-block; min-width: 36px; text-align: center;
+    padding: 4px 10px; border-radius: 999px;
+    background: rgba(79,140,255,.15); color: #a8c5ff; font-weight: 700;
+    font-family: "SFMono-Regular", Consolas, monospace;
+  }
+  .loc-chip {
+    display: inline-block; padding: 4px 10px; border-radius: 8px;
+    background: rgba(168,85,247,.15); color: #d9bbff; font-size: 12px;
+    font-weight: 600;
+  }
+  .desc-cell { color: var(--text); }
+  .desc-cell.none { color: #fca5a5; font-style: italic; font-weight: 500; }
+  .empty-state {
+    padding: 50px 20px; text-align: center; color: var(--text-dim);
+  }
+  .empty-state .icon { font-size: 36px; margin-bottom: 10px; }
+  .actions-cell { text-align: right; white-space: nowrap; }
+
+  /* ---------- Tabs ---------- */
+  .tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--border); margin-bottom: 16px; }
+  .tab {
+    padding: 10px 16px; cursor: pointer; font-size: 13px; font-weight: 600;
+    color: var(--text-dim); border-bottom: 2px solid transparent;
+    transition: color .15s, border-color .15s;
+  }
+  .tab.active { color: var(--text); border-color: var(--primary); }
+  .tab:hover { color: var(--text); }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  /* ---------- Bulk import ---------- */
+  .file-drop {
+    border: 2px dashed var(--border);
+    border-radius: 10px;
+    padding: 24px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color .15s, background .15s;
+    margin-bottom: 12px;
+  }
+  .file-drop:hover, .file-drop.drag { border-color: var(--primary); background: rgba(79,140,255,.05); }
+  .file-drop .icon { font-size: 30px; margin-bottom: 6px; }
+  .file-drop p { margin: 4px 0; color: var(--text-dim); font-size: 13px; }
+  .file-drop strong { color: var(--text); }
+
+  .hint {
+    font-size: 12px; color: var(--text-dim);
+    background: var(--bg-soft); border-left: 3px solid var(--primary);
+    padding: 10px 14px; border-radius: 8px; margin: 10px 0;
+    line-height: 1.5;
+  }
+  .hint code {
+    background: rgba(255,255,255,.06); padding: 2px 6px;
+    border-radius: 4px; font-size: 11.5px; color: #cbd5ff;
+  }
+
+  .preview-bar {
+    display: flex; justify-content: space-between; align-items: center;
+    background: var(--bg-soft); border: 1px solid var(--border);
+    border-radius: 10px; padding: 10px 14px; margin: 10px 0; font-size: 13px;
+  }
+  .preview-bar .counts { display: flex; gap: 16px; }
+  .preview-bar .counts span { display: inline-flex; align-items: center; gap: 6px; }
+  .preview-bar .counts .n { font-weight: 700; color: var(--text); font-family: monospace; }
+
+  /* ---------- Toast ---------- */
+  .toast-wrap {
+    position: fixed; bottom: 22px; right: 22px;
+    display: flex; flex-direction: column; gap: 10px; z-index: 100;
+  }
+  .toast {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--primary);
+    padding: 12px 16px; border-radius: 10px;
+    box-shadow: var(--shadow);
+    font-size: 13px; max-width: 380px;
+    animation: slideIn .25s ease-out;
+  }
+  .toast.success { border-left-color: var(--success); }
+  .toast.error { border-left-color: var(--danger); }
+  .toast.warning { border-left-color: var(--warning); }
+  @keyframes slideIn {
+    from { transform: translateX(20px); opacity: 0; }
+    to   { transform: translateX(0); opacity: 1; }
+  }
+
+  /* ---------- Status ---------- */
+  .sheet-status {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 12px; color: var(--text-dim);
+    padding: 6px 10px; background: var(--bg-soft); border-radius: 999px;
+    border: 1px solid var(--border);
+  }
+  .sheet-status .dot {
+    width: 8px; height: 8px; border-radius: 50%; background: var(--warning);
+  }
+  .sheet-status.ok .dot { background: var(--success); box-shadow: 0 0 0 3px rgba(34,197,94,.15); }
+  .sheet-status.err .dot { background: var(--danger); }
+  .sheet-status.loading .dot {
+    background: var(--primary);
+    animation: pulse 1s infinite;
+  }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.35} }
+
+  .highlight-flash { animation: flash 1.2s; }
+  @keyframes flash {
+    0% { background: rgba(79,140,255,.3); }
+    100% { background: transparent; }
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: #2a3550; border-radius: 5px; }
+  ::-webkit-scrollbar-thumb:hover { background: #3a476a; }
+
+  /* Modal */
+  .modal-backdrop {
+    position: fixed; inset: 0; background: rgba(0,0,0,.6);
+    display: none; align-items: center; justify-content: center; z-index: 200;
+    backdrop-filter: blur(4px);
+  }
+  .modal-backdrop.open { display: flex; }
+  .modal {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: var(--radius); width: 94%; max-width: 520px;
+    box-shadow: var(--shadow); padding: 22px;
+  }
+  .modal h3 { margin: 0 0 16px; font-size: 16px; }
+  .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 18px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <div class="logo">CE</div>
+    <div>
+      <h1>Centralux Estoque C</h1>
+      <small>Controle de estoque com sincronização em planilha</small>
+    </div>
+  </div>
+  <div class="header-actions">
+    <div id="sheetStatus" class="sheet-status loading">
+      <span class="dot"></span> <span id="sheetStatusText">Carregando planilha...</span>
+    </div>
+    <button class="btn-ghost btn-sm" id="btnReload" title="Recarregar dados da planilha">Atualizar planilha</button>
+    <button class="btn-ghost btn-sm" id="btnExport" title="Exportar cadastro para Excel">Exportar</button>
+  </div>
+</header>
+
+<main>
+
+  <!-- Stats -->
+  <section class="stats">
+    <div class="stat v1"><div class="label">Itens cadastrados</div><div class="value" id="statItems">0</div></div>
+    <div class="stat v2"><div class="label">Total de peças</div><div class="value" id="statPieces">0</div></div>
+    <div class="stat v3"><div class="label">Localizações</div><div class="value" id="statLocations">0</div></div>
+    <div class="stat v4"><div class="label">Produtos na planilha</div><div class="value" id="statSheet">0</div></div>
+  </section>
+
+  <div class="grid-2">
+    <!-- Cadastro -->
+    <section class="card">
+      <h2><span class="dot"></span> Cadastrar / Importar</h2>
+
+      <div class="tabs">
+        <div class="tab active" data-tab="single">Cadastro individual</div>
+        <div class="tab" data-tab="bulk">Importação em lote</div>
+      </div>
+
+      <!-- Aba 1: Cadastro único -->
+      <div class="tab-content active" data-content="single">
+        <form id="formSingle">
+          <div class="form-grid">
+            <div>
+              <label for="codigo">Código</label>
+              <input type="text" id="codigo" placeholder="Ex: 12345" autocomplete="off" required />
+            </div>
+            <div>
+              <label for="qtd">Peças (QTD)</label>
+              <input type="number" id="qtd" placeholder="0" min="0" step="1" required />
+            </div>
+            <div>
+              <label for="local">Localização</label>
+              <input type="text" id="local" placeholder="Ex: A-03 / Prateleira 2" autocomplete="off" required />
+            </div>
+            <div>
+              <button type="submit" class="btn-primary" id="btnSave">Adicionar</button>
+            </div>
+          </div>
+          <div class="desc-display" id="descBox">
+            <span class="pill">Descrição</span>
+            <span id="descText">Digite um código para buscar a descrição na planilha.</span>
+          </div>
+        </form>
+      </div>
+
+      <!-- Aba 2: Importação em lote -->
+      <div class="tab-content" data-content="bulk">
+        <div class="hint">
+          Cole do Excel (3 colunas: <code>Código | Peças | Localização</code>) ou arraste um arquivo
+          <code>.xlsx</code> / <code>.csv</code>. O sistema buscará a descrição de cada código automaticamente.
+        </div>
+
+        <label for="fileInput" class="file-drop" id="fileDrop">
+          <div class="icon">📂</div>
+          <p><strong>Clique ou arraste</strong> um arquivo <code>.xlsx</code>, <code>.xls</code> ou <code>.csv</code></p>
+          <p id="fileName" style="color:var(--primary); font-size:12px;"></p>
+          <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" style="display:none" />
+        </label>
+
+        <label for="bulkPaste">Ou cole do Excel (Ctrl+V)</label>
+        <textarea id="bulkPaste" placeholder="Código&#9;Peças&#9;Localização&#10;12345&#9;10&#9;A-03&#10;98765&#9;5&#9;B-12"></textarea>
+
+        <div class="preview-bar" id="bulkPreview" style="display:none">
+          <div class="counts">
+            <span>Linhas: <span class="n" id="bulkTotal">0</span></span>
+            <span style="color:#4ade80">Com descrição: <span class="n" id="bulkOk">0</span></span>
+            <span style="color:#fca5a5">Sem descrição: <span class="n" id="bulkFail">0</span></span>
+          </div>
+          <div style="display:flex; gap:8px;">
+            <button type="button" class="btn-ghost btn-sm" id="btnClearBulk">Limpar</button>
+            <button type="button" class="btn-primary btn-sm" id="btnImport">Importar todos</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Busca -->
+    <section class="card">
+      <h2><span class="dot" style="background:var(--accent)"></span> Buscar no estoque</h2>
+      <div class="search-row">
+        <div>
+          <label>Por código</label>
+          <input type="text" id="searchCodigo" placeholder="Código..." autocomplete="off" />
+        </div>
+        <div>
+          <label>Por descrição</label>
+          <input type="text" id="searchDesc" placeholder="Descrição..." autocomplete="off" />
+        </div>
+        <div>
+          <label>Por localização</label>
+          <input type="text" id="searchLocal" placeholder="Localização..." autocomplete="off" />
+        </div>
+        <div>
+          <button type="button" class="btn-ghost" id="btnClearSearch">Limpar</button>
+        </div>
+      </div>
+      <div id="searchSummary" style="margin-top:12px; font-size:12px; color:var(--text-dim);"></div>
+    </section>
+  </div>
+
+  <!-- Tabela -->
+  <section class="card">
+    <h2 style="display:flex; justify-content: space-between; align-items:center;">
+      <span style="display:inline-flex; align-items:center; gap:8px;">
+        <span class="dot" style="background:var(--success)"></span>
+        Estoque cadastrado
+      </span>
+      <span style="font-size:12px; color:var(--text-dim); text-transform:none; letter-spacing:0; font-weight:500;">
+        Clique no cabeçalho para ordenar
+      </span>
+    </h2>
+    <div class="table-wrap">
+      <table id="tbl">
+        <thead>
+          <tr>
+            <th data-sort="codigo" style="width:140px">Código</th>
+            <th data-sort="descricao">Descrição</th>
+            <th data-sort="qtd" style="width:100px; text-align:center">Peças</th>
+            <th data-sort="localizacao" style="width:160px">Localização</th>
+            <th data-sort="updatedAt" style="width:140px">Atualizado</th>
+            <th style="width:120px"></th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+  </section>
+</main>
+
+<!-- Modal editar -->
+<div class="modal-backdrop" id="modal">
+  <div class="modal">
+    <h3>Editar item</h3>
+    <div style="display:grid; gap:12px;">
+      <div>
+        <label>Código</label>
+        <input type="text" id="editCodigo" disabled />
+      </div>
+      <div>
+        <label>Descrição (da planilha)</label>
+        <input type="text" id="editDesc" disabled />
+      </div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+        <div>
+          <label>Peças (QTD)</label>
+          <input type="number" id="editQtd" min="0" step="1" />
+        </div>
+        <div>
+          <label>Localização</label>
+          <input type="text" id="editLocal" />
+        </div>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-ghost" id="btnCancelEdit">Cancelar</button>
+      <button class="btn-primary" id="btnSaveEdit">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast-wrap" id="toasts"></div>
+
+<script>
+/* =================================================================
+   Centralux Estoque C — Supabase Edition
+   ================================================================= */
+
+const SUPABASE_URL = 'https://owczlboltrcuawbgwnvi.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im93Y3psYm9sdHJjdWF3Ymd3bnZpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcwMzkxNzAsImV4cCI6MjA5MjYxNTE3MH0.qed9dF3704pYq3KaPTxu3EYzCB7rA7w8TJuN9ir0spM';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+
+const SHEET_ID  = '1fRqUo8vH4awjCwV12U0fhR2bdBSRGFUVMlU8PozUsoQ';
+const SHEET_GID = '1556491081';
+const LS_SHEET  = 'centralux.sheet.v1';
+
+/* ---------- State ---------- */
+let sheetMap  = new Map();     // código -> descrição
+let items     = [];            // [{codigo, qtd, localizacao, updatedAt}]
+let bulkRows  = [];            // parsed pending import rows
+let sortKey   = 'updatedAt';
+let sortDir   = -1;
+
+/* ---------- Utilities ---------- */
+const $  = s => document.querySelector(s);
+const $$ = s => document.querySelectorAll(s);
+const norm = s => (s ?? '').toString().trim();
+const normKey = s => norm(s).toUpperCase().replace(/\s+/g,' ');
+
+/* ---------- Supabase CRUD ---------- */
+async function loadItemsFromDB() {
+  const { data, error } = await sb.from('estoque').select('*').order('updated_at', { ascending: false });
+  if (error) { toast('Erro ao carregar dados: ' + error.message, 'error'); return; }
+  items = (data || []).map(r => ({
+    codigo: r.codigo,
+    qtd: r.qtd,
+    localizacao: r.localizacao,
+    updatedAt: new Date(r.updated_at).getTime()
+  }));
+  render();
+}
+
+async function upsertItemDB(item) {
+  const { error } = await sb.from('estoque').upsert({
+    codigo: item.codigo,
+    qtd: Number(item.qtd) || 0,
+    localizacao: item.localizacao || '',
+    updated_at: new Date().toISOString()
+  }, { onConflict: 'codigo' });
+  if (error) { toast('Erro ao salvar: ' + error.message, 'error'); return false; }
+  return true;
+}
+
+async function deleteItemDB(codigo) {
+  const { error } = await sb.from('estoque').delete().eq('codigo', codigo);
+  if (error) { toast('Erro ao excluir: ' + error.message, 'error'); return false; }
+  return true;
+}
+
+function loadCachedSheet() {
+  try {
+    const data = JSON.parse(localStorage.getItem(LS_SHEET));
+    if (data && data.map) {
+      sheetMap = new Map(data.map);
+      setSheetStatus('ok', `Planilha em cache (${sheetMap.size} produtos)`);
+      updateStats();
+    }
+  } catch {}
+}
+function saveCachedSheet() {
+  const entries = Array.from(sheetMap.entries());
+  localStorage.setItem(LS_SHEET, JSON.stringify({ map: entries, at: Date.now() }));
+}
+
+/* ---------- Toasts ---------- */
+function toast(msg, type='') {
+  const el = document.createElement('div');
+  el.className = 'toast ' + type;
+  el.textContent = msg;
+  $('#toasts').appendChild(el);
+  setTimeout(() => { el.style.opacity = '0'; el.style.transform = 'translateX(20px)'; }, 2800);
+  setTimeout(() => el.remove(), 3200);
+}
+
+/* ---------- Sheet status chip ---------- */
+function setSheetStatus(kind, text) {
+  const el = $('#sheetStatus');
+  el.className = 'sheet-status ' + kind;
+  $('#sheetStatusText').textContent = text;
+}
+
+/* ---------- CSV parser (handles quoted fields) ---------- */
+function parseCSV(text) {
+  const rows = [];
+  let row = [], cur = '', inQ = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (inQ) {
+      if (c === '"' && text[i+1] === '"') { cur += '"'; i++; }
+      else if (c === '"') inQ = false;
+      else cur += c;
+    } else {
+      if (c === '"') inQ = true;
+      else if (c === ',') { row.push(cur); cur = ''; }
+      else if (c === '\n') { row.push(cur); rows.push(row); row=[]; cur=''; }
+      else if (c === '\r') { /* skip */ }
+      else cur += c;
+    }
+  }
+  if (cur.length || row.length) { row.push(cur); rows.push(row); }
+  return rows;
+}
+
+/* ---------- Fetch Google Sheet (JSONP via gviz — funciona em file://) ---------- */
+function fetchSheet() {
+  return new Promise(resolve => {
+    setSheetStatus('loading', 'Carregando planilha...');
+
+    const cbName = '__centralux_cb_' + Math.random().toString(36).slice(2);
+    let done = false;
+    let script = null;
+    let timeoutId = null;
+
+    const cleanup = () => {
+      if (timeoutId) clearTimeout(timeoutId);
+      try { delete window[cbName]; } catch { window[cbName] = undefined; }
+      if (script && script.parentNode) script.parentNode.removeChild(script);
+    };
+
+    window[cbName] = function(data) {
+      if (done) return; done = true;
+      try {
+        if (!data || data.status === 'error') {
+          const msg = (data && data.errors && data.errors[0] && data.errors[0].detailed_message)
+            || 'Resposta inválida da planilha';
+          setSheetStatus('err', 'Falha na planilha');
+          toast('Erro da planilha: ' + msg + ' — confira o compartilhamento e o GID.', 'error');
+          cleanup(); resolve(false); return;
+        }
+        const table = data.table;
+        if (!table || !table.cols || !table.rows) {
+          setSheetStatus('err', 'Planilha sem dados');
+          cleanup(); resolve(false); return;
+        }
+
+        const cols = table.cols.map(c => normKey(c.label || c.id || ''));
+        let codeIdx = cols.findIndex(h => /^COD(IGO|IGO)?$|CODE/i.test(h) || h.indexOf('CODIG') !== -1);
+        let descIdx = cols.findIndex(h => /DESCRI/i.test(h) || h === 'PRODUTO' || h === 'ITEM' || h === 'NOME');
+        if (codeIdx === -1) codeIdx = 0;
+        if (descIdx === -1) descIdx = (cols.length > 1 ? 1 : 0);
+
+        sheetMap = new Map();
+        for (const r of table.rows) {
+          if (!r || !r.c) continue;
+          const cCell = r.c[codeIdx];
+          const dCell = r.c[descIdx];
+          const rawCode = cCell ? (cCell.v != null ? cCell.v : cCell.f) : '';
+          const rawDesc = dCell ? (dCell.v != null ? dCell.v : dCell.f) : '';
+          const code = normKey(rawCode);
+          const desc = norm(rawDesc);
+          if (code && desc) sheetMap.set(code, desc);
+        }
+
+        saveCachedSheet();
+        setSheetStatus('ok', `Planilha carregada (${sheetMap.size} produtos)`);
+        toast(`Planilha sincronizada: ${sheetMap.size} produtos disponíveis.`, 'success');
+        updateStats();
+        render();
+        onCodigoInput();
+        cleanup(); resolve(true);
+      } catch (e) {
+        setSheetStatus('err', 'Erro ao processar planilha');
+        toast('Erro ao processar: ' + e.message, 'error');
+        cleanup(); resolve(false);
+      }
+    };
+
+    script = document.createElement('script');
+    script.src = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq`
+               + `?tqx=out:json;responseHandler:${cbName}`
+               + `&gid=${SHEET_GID}&headers=1`;
+    script.onerror = () => {
+      if (done) return; done = true;
+      setSheetStatus('err', 'Falha ao carregar planilha');
+      toast('Não foi possível contatar o Google Sheets. Verifique a internet e o compartilhamento.', 'error');
+      cleanup(); resolve(false);
+    };
+    timeoutId = setTimeout(() => {
+      if (done) return; done = true;
+      setSheetStatus('err', 'Tempo esgotado');
+      toast('Tempo esgotado ao carregar a planilha.', 'error');
+      cleanup(); resolve(false);
+    }, 15000);
+
+    document.body.appendChild(script);
+  });
+}
+
+function lookupDesc(code) {
+  return sheetMap.get(normKey(code)) || null;
+}
+
+/* ---------- Form - single register ---------- */
+function onCodigoInput() {
+  const code = norm($('#codigo').value);
+  const box  = $('#descBox');
+  const txt  = $('#descText');
+  if (!code) {
+    box.className = 'desc-display';
+    txt.textContent = 'Digite um código para buscar a descrição na planilha.';
+    return;
+  }
+  const desc = lookupDesc(code);
+  if (desc) {
+    box.className = 'desc-display found';
+    txt.innerHTML = `<strong>${escapeHtml(desc)}</strong>`;
+    box.querySelector('.pill').textContent = 'Encontrado';
+  } else {
+    box.className = 'desc-display notfound';
+    txt.textContent = 'Produto não cadastrado';
+    box.querySelector('.pill').textContent = 'Não encontrado';
+  }
+}
+
+function addOrUpdateItemLocal({ codigo, qtd, localizacao }) {
+  const key = normKey(codigo);
+  const idx = items.findIndex(it => normKey(it.codigo) === key);
+  const now = Date.now();
+  if (idx >= 0) {
+    items[idx].qtd = Number(qtd) || 0;
+    items[idx].localizacao = localizacao;
+    items[idx].updatedAt = now;
+    items[idx].codigo = codigo;
+    return { updated: true, index: idx };
+  } else {
+    items.unshift({ codigo, qtd: Number(qtd) || 0, localizacao, updatedAt: now });
+    return { updated: false, index: 0 };
+  }
+}
+
+/* ---------- Table render ---------- */
+function updateStats() {
+  $('#statItems').textContent = items.length;
+  $('#statPieces').textContent = items.reduce((s, i) => s + (Number(i.qtd) || 0), 0);
+  $('#statLocations').textContent = new Set(items.map(i => normKey(i.localizacao)).filter(Boolean)).size;
+  $('#statSheet').textContent = sheetMap.size;
+}
+
+function getFilteredItems() {
+  const fc = normKey($('#searchCodigo').value);
+  const fd = normKey($('#searchDesc').value);
+  const fl = normKey($('#searchLocal').value);
+  return items.filter(i => {
+    if (fc && !normKey(i.codigo).includes(fc)) return false;
+    const desc = normKey(lookupDesc(i.codigo) || '');
+    if (fd && !desc.includes(fd)) return false;
+    if (fl && !normKey(i.localizacao).includes(fl)) return false;
+    return true;
+  });
+}
+
+function sortItems(arr) {
+  const dir = sortDir;
+  return arr.slice().sort((a, b) => {
+    let va, vb;
+    if (sortKey === 'descricao') {
+      va = (lookupDesc(a.codigo) || '').toLowerCase();
+      vb = (lookupDesc(b.codigo) || '').toLowerCase();
+    } else if (sortKey === 'qtd') {
+      va = Number(a.qtd) || 0; vb = Number(b.qtd) || 0;
+    } else if (sortKey === 'updatedAt') {
+      va = a.updatedAt || 0; vb = b.updatedAt || 0;
+    } else {
+      va = (a[sortKey] || '').toString().toLowerCase();
+      vb = (b[sortKey] || '').toString().toLowerCase();
+    }
+    if (va < vb) return -1 * dir;
+    if (va > vb) return 1 * dir;
+    return 0;
+  });
+}
+
+function render(highlightCode = null) {
+  updateStats();
+  const list = sortItems(getFilteredItems());
+  const tbody = $('#tbody');
+  if (!list.length) {
+    tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state">
+      <div class="icon">📦</div>
+      <div>${items.length ? 'Nenhum item encontrado com esses filtros.' : 'Nenhum item cadastrado ainda.'}</div>
+    </div></td></tr>`;
+  } else {
+    tbody.innerHTML = list.map(it => {
+      const desc = lookupDesc(it.codigo);
+      const descHtml = desc
+        ? `<span class="desc-cell">${escapeHtml(desc)}</span>`
+        : `<span class="desc-cell none">Produto não cadastrado</span>`;
+      const when = it.updatedAt ? new Date(it.updatedAt).toLocaleString('pt-BR', {day:'2-digit', month:'2-digit', year:'2-digit', hour:'2-digit', minute:'2-digit'}) : '';
+      return `
+      <tr data-code="${escapeHtml(normKey(it.codigo))}">
+        <td class="code-cell">${escapeHtml(it.codigo)}</td>
+        <td>${descHtml}</td>
+        <td style="text-align:center"><span class="qty-badge">${Number(it.qtd)||0}</span></td>
+        <td>${it.localizacao ? `<span class="loc-chip">${escapeHtml(it.localizacao)}</span>` : ''}</td>
+        <td style="color:var(--text-dim); font-size:12px;">${when}</td>
+        <td class="actions-cell">
+          <button class="btn-icon" data-edit="${escapeHtml(normKey(it.codigo))}" title="Editar">✏️</button>
+          <button class="btn-icon" data-del="${escapeHtml(normKey(it.codigo))}" title="Excluir">🗑️</button>
+        </td>
+      </tr>`;
+    }).join('');
+  }
+
+  // Summary
+  const totalQty = list.reduce((s, i) => s + (Number(i.qtd)||0), 0);
+  $('#searchSummary').textContent = list.length
+    ? `Exibindo ${list.length} de ${items.length} itens — ${totalQty} peças no filtro atual.`
+    : '';
+
+  if (highlightCode) {
+    const row = tbody.querySelector(`tr[data-code="${normKey(highlightCode)}"]`);
+    if (row) {
+      row.classList.add('highlight-flash');
+      row.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    }
+  }
+
+  // Bindings
+  tbody.querySelectorAll('[data-edit]').forEach(b => b.addEventListener('click', () => openEdit(b.dataset.edit)));
+  tbody.querySelectorAll('[data-del]').forEach(b => b.addEventListener('click', () => deleteItem(b.dataset.del)));
+}
+
+function escapeHtml(s) {
+  return (s ?? '').toString().replace(/[&<>"']/g, m => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+}
+
+/* ---------- Edit / delete ---------- */
+let editingKey = null;
+function openEdit(key) {
+  const it = items.find(i => normKey(i.codigo) === key);
+  if (!it) return;
+  editingKey = key;
+  $('#editCodigo').value = it.codigo;
+  $('#editDesc').value = lookupDesc(it.codigo) || 'Produto não cadastrado';
+  $('#editQtd').value = it.qtd;
+  $('#editLocal').value = it.localizacao;
+  $('#modal').classList.add('open');
+  setTimeout(() => $('#editQtd').focus(), 50);
+}
+function closeEdit() { $('#modal').classList.remove('open'); editingKey = null; }
+async function saveEdit() {
+  if (!editingKey) return;
+  const it = items.find(i => normKey(i.codigo) === editingKey);
+  if (!it) return;
+  it.qtd = Number($('#editQtd').value) || 0;
+  it.localizacao = norm($('#editLocal').value);
+  it.updatedAt = Date.now();
+  const ok = await upsertItemDB(it);
+  if (ok) { render(it.codigo); closeEdit(); toast('Item atualizado.', 'success'); }
+}
+async function deleteItem(key) {
+  const it = items.find(i => normKey(i.codigo) === key);
+  if (!it) return;
+  if (!confirm(`Excluir o item "${it.codigo}"?`)) return;
+  const ok = await deleteItemDB(it.codigo);
+  if (ok) {
+    items = items.filter(i => normKey(i.codigo) !== key);
+    render();
+    toast('Item excluído.', 'warning');
+  }
+}
+
+/* ---------- Bulk import ---------- */
+function parseBulkText(text) {
+  // Accepts tab-separated, semicolon-separated or comma-separated
+  const lines = text.split(/\r?\n/).filter(l => l.trim().length);
+  if (!lines.length) return [];
+  // Detect separator
+  const first = lines[0];
+  const sep = first.includes('\t') ? '\t' :
+              first.includes(';')  ? ';'  :
+              first.includes(',')  ? ','  : '\t';
+  // Skip header if first row looks like header (non-numeric qty)
+  const parsed = lines.map(l => {
+    // simple split — for clean paste from Excel this is enough
+    if (sep === ',') return parseCSV(l)[0] || [];
+    return l.split(sep);
+  });
+  let start = 0;
+  if (parsed[0] && parsed[0].length >= 2) {
+    const q = norm(parsed[0][1]);
+    if (q && isNaN(Number(q.replace(',','.')))) start = 1;
+  }
+  const out = [];
+  for (let i = start; i < parsed.length; i++) {
+    const r = parsed[i];
+    if (!r || !r.length) continue;
+    const codigo = norm(r[0]);
+    const qtd   = Number(norm(r[1]).replace(',','.')) || 0;
+    const local = norm(r[2]);
+    if (!codigo) continue;
+    out.push({ codigo, qtd, localizacao: local });
+  }
+  return out;
+}
+
+function updateBulkPreview() {
+  const bar = $('#bulkPreview');
+  if (!bulkRows.length) { bar.style.display = 'none'; return; }
+  let ok = 0, fail = 0;
+  for (const r of bulkRows) { lookupDesc(r.codigo) ? ok++ : fail++; }
+  $('#bulkTotal').textContent = bulkRows.length;
+  $('#bulkOk').textContent = ok;
+  $('#bulkFail').textContent = fail;
+  bar.style.display = 'flex';
+}
+
+async function doBulkImport() {
+  if (!bulkRows.length) return;
+  let ok = 0;
+  for (const r of bulkRows) {
+    addOrUpdateItemLocal(r);
+    const success = await upsertItemDB(r);
+    if (success) ok++;
+  }
+  await loadItemsFromDB();
+  toast(`${ok} item(ns) importado(s) com sucesso.`, 'success');
+  bulkRows = [];
+  $('#bulkPaste').value = '';
+  $('#fileName').textContent = '';
+  $('#fileInput').value = '';
+  updateBulkPreview();
+}
+
+async function handleFile(file) {
+  if (!file) return;
+  $('#fileName').textContent = file.name;
+  const ext = file.name.split('.').pop().toLowerCase();
+  try {
+    if (ext === 'csv') {
+      const text = await file.text();
+      $('#bulkPaste').value = text;
+      bulkRows = parseBulkText(text);
+    } else {
+      const buf = await file.arrayBuffer();
+      const wb = XLSX.read(buf, { type: 'array' });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+      bulkRows = [];
+      let start = 0;
+      if (rows[0] && rows[0].length >= 2) {
+        const q = norm(rows[0][1]);
+        if (q && isNaN(Number(q.toString().replace(',','.')))) start = 1;
+      }
+      for (let i = start; i < rows.length; i++) {
+        const r = rows[i];
+        if (!r) continue;
+        const codigo = norm(r[0]);
+        if (!codigo) continue;
+        const qtd   = Number(norm(r[1]).toString().replace(',','.')) || 0;
+        const local = norm(r[2]);
+        bulkRows.push({ codigo, qtd, localizacao: local });
+      }
+      // Also reflect in textarea as TSV for preview
+      $('#bulkPaste').value = bulkRows.map(r => `${r.codigo}\t${r.qtd}\t${r.localizacao}`).join('\n');
+    }
+    updateBulkPreview();
+    toast(`${bulkRows.length} linha(s) detectada(s). Revise e clique "Importar todos".`, 'success');
+  } catch (e) {
+    toast('Erro ao ler arquivo: ' + e.message, 'error');
+  }
+}
+
+/* ---------- Export ---------- */
+function exportXlsx() {
+  if (!items.length) { toast('Nada para exportar.', 'warning'); return; }
+  const rows = items.map(i => ({
+    'Código': i.codigo,
+    'Descrição': lookupDesc(i.codigo) || 'Produto não cadastrado',
+    'Peças': Number(i.qtd) || 0,
+    'Localização': i.localizacao || '',
+    'Atualizado em': new Date(i.updatedAt || Date.now()).toLocaleString('pt-BR'),
+  }));
+  const ws = XLSX.utils.json_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Estoque');
+  const stamp = new Date().toISOString().slice(0,10);
+  XLSX.writeFile(wb, `centralux-estoque-${stamp}.xlsx`);
+  toast('Arquivo exportado.', 'success');
+}
+
+/* ---------- Event bindings ---------- */
+function bind() {
+  // Tabs
+  $$('.tab').forEach(t => t.addEventListener('click', () => {
+    $$('.tab').forEach(x => x.classList.remove('active'));
+    $$('.tab-content').forEach(x => x.classList.remove('active'));
+    t.classList.add('active');
+    document.querySelector(`.tab-content[data-content="${t.dataset.tab}"]`).classList.add('active');
+  }));
+
+  // Single form
+  $('#codigo').addEventListener('input', onCodigoInput);
+  $('#formSingle').addEventListener('submit', async e => {
+    e.preventDefault();
+    const codigo = norm($('#codigo').value);
+    const qtd    = $('#qtd').value;
+    const local  = norm($('#local').value);
+    if (!codigo) return;
+    const res = addOrUpdateItemLocal({ codigo, qtd, localizacao: local });
+    const ok = await upsertItemDB({ codigo, qtd, localizacao: local });
+    if (ok) {
+      await loadItemsFromDB();
+      render(codigo);
+      toast(res.updated ? `Item "${codigo}" atualizado.` : `Item "${codigo}" adicionado.`, 'success');
+    }
+    $('#codigo').value = ''; $('#qtd').value = ''; $('#local').value = '';
+    onCodigoInput();
+    $('#codigo').focus();
+  });
+
+  // Search
+  ['searchCodigo','searchDesc','searchLocal'].forEach(id => {
+    $('#'+id).addEventListener('input', () => render());
+  });
+  $('#btnClearSearch').addEventListener('click', () => {
+    ['searchCodigo','searchDesc','searchLocal'].forEach(id => $('#'+id).value = '');
+    render();
+  });
+
+  // Sort
+  $$('thead th[data-sort]').forEach(th => {
+    th.addEventListener('click', () => {
+      const k = th.dataset.sort;
+      if (sortKey === k) sortDir = -sortDir; else { sortKey = k; sortDir = 1; }
+      render();
+    });
+  });
+
+  // Bulk - textarea
+  $('#bulkPaste').addEventListener('input', () => {
+    bulkRows = parseBulkText($('#bulkPaste').value);
+    updateBulkPreview();
+  });
+  $('#btnClearBulk').addEventListener('click', () => {
+    bulkRows = []; $('#bulkPaste').value = ''; $('#fileName').textContent = '';
+    $('#fileInput').value = '';
+    updateBulkPreview();
+  });
+  $('#btnImport').addEventListener('click', doBulkImport);
+
+  // File drop
+  const drop = $('#fileDrop');
+  drop.addEventListener('click', () => $('#fileInput').click());
+  $('#fileInput').addEventListener('change', e => handleFile(e.target.files[0]));
+  drop.addEventListener('dragover', e => { e.preventDefault(); drop.classList.add('drag'); });
+  drop.addEventListener('dragleave', () => drop.classList.remove('drag'));
+  drop.addEventListener('drop', e => {
+    e.preventDefault(); drop.classList.remove('drag');
+    if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
+  });
+
+  // Modal
+  $('#btnCancelEdit').addEventListener('click', closeEdit);
+  $('#btnSaveEdit').addEventListener('click', saveEdit);
+  $('#modal').addEventListener('click', e => { if (e.target === $('#modal')) closeEdit(); });
+
+  // Header actions
+  $('#btnReload').addEventListener('click', fetchSheet);
+  $('#btnExport').addEventListener('click', exportXlsx);
+}
+
+/* ---------- Init ---------- */
+async function init() {
+  bind();
+  loadCachedSheet();
+  render();
+  await loadItemsFromDB();
+  fetchSheet();
+}
+init();
+</script>
+
+</body>
+</html>
