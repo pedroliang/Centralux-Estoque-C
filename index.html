@@ -939,14 +939,25 @@ function updateBulkPreview() {
 
 async function doBulkImport() {
   if (!bulkRows.length) return;
-  let ok = 0;
-  for (const r of bulkRows) {
-    addOrUpdateItemLocal(r);
-    const success = await upsertItemDB(r);
-    if (success) ok++;
+  
+  // Preparar dados para o Supabase (bulk upsert)
+  const dataToUpsert = bulkRows.map(r => ({
+    codigo: r.codigo,
+    qtd: Number(r.qtd) || 0,
+    localizacao: r.localizacao || '',
+    updated_at: new Date().toISOString()
+  }));
+
+  const { error } = await sb.from('estoque').upsert(dataToUpsert, { onConflict: 'codigo' });
+
+  if (error) {
+    toast('Erro na importação em lote: ' + error.message, 'error');
+    return;
   }
+
   await loadItemsFromDB();
-  toast(`${ok} item(ns) importado(s) com sucesso.`, 'success');
+  toast(`${bulkRows.length} item(ns) importado(s) com sucesso.`, 'success');
+  
   bulkRows = [];
   $('#bulkPaste').value = '';
   $('#fileName').textContent = '';
