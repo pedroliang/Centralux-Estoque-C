@@ -692,7 +692,11 @@ function loadCachedSheet() {
 }
 function saveCachedSheet() {
   const entries = Array.from(sheetMap.entries());
-  localStorage.setItem(LS_SHEET, JSON.stringify({ map: entries, at: Date.now() }));
+  localStorage.setItem(LS_SHEET, JSON.stringify({ 
+    map: entries, 
+    at: Date.now(),
+    count: entries.length 
+  }));
 }
 
 /* ---------- Toasts ---------- */
@@ -735,9 +739,11 @@ function parseCSV(text) {
 }
 
 /* ---------- Fetch Google Sheet (JSONP via gviz — funciona em file://) ---------- */
+let lastSyncTime = null;
+
 function fetchSheet() {
   return new Promise(resolve => {
-    setSheetStatus('loading', 'Carregando planilha...');
+    setSheetStatus('loading', 'Sincronizando planilha...');
 
     const cbName = '__centralux_cb_' + Math.random().toString(36).slice(2);
     let done = false;
@@ -756,23 +762,32 @@ function fetchSheet() {
         if (!data || data.status === 'error') {
           const msg = (data && data.errors && data.errors[0] && data.errors[0].detailed_message)
             || 'Resposta inválida da planilha';
-          setSheetStatus('err', 'Falha na planilha');
-          toast('Erro da planilha: ' + msg + ' — confira o compartilhamento e o GID.', 'error');
+          
+          if (sheetMap.size > 0) {
+            setSheetStatus('ok', `Offline (${sheetMap.size} itens)`);
+          } else {
+            setSheetStatus('err', 'Erro na planilha');
+          }
+          toast('Erro ao sincronizar: ' + msg, 'error');
           cleanup(); resolve(false); return;
         }
+        
         const table = data.table;
-        if (!table || !table.cols || !table.rows) {
-          setSheetStatus('err', 'Planilha sem dados');
+        if (!table || !table.rows) {
+          setSheetStatus('err', 'Planilha vazia');
           cleanup(); resolve(false); return;
         }
 
+        // Se usamos select A,C, as colunas são fixas: 0=Code, 1=Desc
+        // Mas vamos manter a detecção por segurança caso o query mude
         const cols = table.cols.map(c => normKey(c.label || c.id || ''));
-        let codeIdx = cols.findIndex(h => /^COD(IGO|IGO)?$|CODE/i.test(h) || h.indexOf('CODIG') !== -1);
-        let descIdx = cols.findIndex(h => /DESCRI/i.test(h) || h === 'PRODUTO' || h === 'ITEM' || h === 'NOME');
+        let codeIdx = cols.findIndex(h => /^COD/i.test(h) || h === 'A');
+        let descIdx = cols.findIndex(h => /DESC/i.test(h) || h === 'C' || h === 'B');
+        
         if (codeIdx === -1) codeIdx = 0;
         if (descIdx === -1) descIdx = (cols.length > 1 ? 1 : 0);
 
-        sheetMap = new Map();
+        const newMap = new Map();
         for (const r of table.rows) {
           if (!r || !r.c) continue;
           const cCell = r.c[codeIdx];
@@ -781,39 +796,59 @@ function fetchSheet() {
           const rawDesc = dCell ? (dCell.v != null ? dCell.v : dCell.f) : '';
           const code = normKey(rawCode);
           const desc = norm(rawDesc);
-          if (code && desc) sheetMap.set(code, desc);
+          if (code && desc) newMap.set(code, desc);
         }
 
-        saveCachedSheet();
-        setSheetStatus('ok', `Planilha carregada (${sheetMap.size} produtos)`);
-        toast(`Planilha sincronizada: ${sheetMap.size} produtos disponíveis.`, 'success');
-        updateStats();
-        render();
-        onCodigoInput();
+        if (newMap.size > 0) {
+          sheetMap = newMap;
+          lastSyncTime = new Date();
+          saveCachedSheet();
+          const timeStr = lastSyncTime.toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'});
+          setSheetStatus('ok', `Sincronizado às ${timeStr} (${sheetMap.size} itens)`);
+          updateStats();
+          render();
+          onCodigoInput();
+        }
+        
         cleanup(); resolve(true);
       } catch (e) {
-        setSheetStatus('err', 'Erro ao processar planilha');
-        toast('Erro ao processar: ' + e.message, 'error');
+        console.error('Erro no callback da planilha:', e);
+        if (sheetMap.size > 0) {
+          setSheetStatus('ok', `Usando cache (${sheetMap.size} itens)`);
+        } else {
+          setSheetStatus('err', 'Erro ao processar');
+        }
         cleanup(); resolve(false);
       }
     };
 
     script = document.createElement('script');
+    // Adicionado tq=select A,C para carregar apenas Código e Descrição
     script.src = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq`
                + `?tqx=out:json;responseHandler:${cbName}`
-               + `&gid=${SHEET_GID}&headers=1`;
+               + `&gid=${SHEET_GID}&headers=1&tq=select%20A,C`;
+    
     script.onerror = () => {
       if (done) return; done = true;
-      setSheetStatus('err', 'Falha ao carregar planilha');
-      toast('Não foi possível contatar o Google Sheets. Verifique a internet e o compartilhamento.', 'error');
+      if (sheetMap.size > 0) {
+        setSheetStatus('ok', `Modo Offline (${sheetMap.size} itens)`);
+      } else {
+        setSheetStatus('err', 'Erro de conexão');
+      }
+      toast('Não foi possível conectar à planilha. Usando dados locais.', 'warning');
       cleanup(); resolve(false);
     };
+
     timeoutId = setTimeout(() => {
       if (done) return; done = true;
-      setSheetStatus('err', 'Tempo esgotado');
-      toast('Tempo esgotado ao carregar a planilha.', 'error');
+      if (sheetMap.size > 0) {
+        setSheetStatus('ok', `Tempo esgotado (Cache: ${sheetMap.size})`);
+      } else {
+        setSheetStatus('err', 'Tempo esgotado');
+      }
+      toast('Tempo esgotado ao sincronizar. Usando cache.', 'warning');
       cleanup(); resolve(false);
-    }, 15000);
+    }, 25000); // Aumentado para 25s
 
     document.body.appendChild(script);
   });
@@ -1300,8 +1335,17 @@ async function init() {
   bind();
   loadCachedSheet();
   render();
-  await loadItemsFromDB();
+  
+  // Carrega DB em paralelo
+  loadItemsFromDB();
+  
+  // Primeira tentativa de sincronização
   fetchSheet();
+  
+  // Sincronização periódica (cada 10 minutos)
+  setInterval(() => {
+    fetchSheet();
+  }, 10 * 60 * 1000);
 }
 init();
 </script>
