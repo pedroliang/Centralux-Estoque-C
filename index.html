@@ -1277,4 +1277,134 @@ function exportXlsx() {
 /* ---------- Tabs (versão robusta) ---------- */
 function activateTab(name) {
   $$('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
-  $$('.
+  $$('.tab-panel').forEach(p => p.classList.toggle('active', p.dataset.panel === name));
+  if (name === 'bulk') {
+    // Garante re-parse do textarea caso o usuário tenha colado
+    setTimeout(() => $('#bulkPaste') && $('#bulkPaste').focus({ preventScroll: true }), 10);
+  }
+}
+
+/* ---------- Bind ---------- */
+function bind() {
+  // Tabs — delegation
+  document.addEventListener('click', (e) => {
+    const btn = e.target.closest('.tab-btn');
+    if (!btn) return;
+    e.preventDefault();
+    activateTab(btn.dataset.tab);
+  });
+
+  // Single form
+  $('#codigo').addEventListener('input', onCodigoInput);
+  $('#formSingle').addEventListener('submit', e => {
+    e.preventDefault();
+    const codigo = norm($('#codigo').value);
+    const qtd    = $('#qtd').value;
+    const local  = norm($('#local').value);
+    if (!codigo) return;
+    const res = addOrUpdateItem({ codigo, qtd, localizacao: local });
+    render(codigo);
+    toast(res.updated ? `Item "${codigo}" atualizado.` : `Item "${codigo}" adicionado.`, 'success');
+    $('#codigo').value = ''; $('#qtd').value = ''; $('#local').value = '';
+    onCodigoInput();
+    $('#codigo').focus();
+  });
+
+  // Search
+  ['searchCodigo','searchDesc','searchLocal'].forEach(id => {
+    $('#'+id).addEventListener('input', () => render());
+  });
+  $('#btnClearSearch').addEventListener('click', () => {
+    ['searchCodigo','searchDesc','searchLocal'].forEach(id => $('#'+id).value = '');
+    render();
+  });
+
+  // Sort
+  $$('thead th[data-sort]').forEach(th => {
+    th.addEventListener('click', () => {
+      const k = th.dataset.sort;
+      if (sortKey === k) sortDir = -sortDir; else { sortKey = k; sortDir = 1; }
+      render();
+    });
+  });
+
+  // Bulk - textarea
+  $('#bulkPaste').addEventListener('input', () => {
+    bulkRows = parseBulkText($('#bulkPaste').value);
+    updateBulkPreview();
+  });
+  $('#btnClearBulk').addEventListener('click', () => {
+    bulkRows = []; $('#bulkPaste').value = ''; $('#fileName').textContent = '';
+    $('#fileInput').value = '';
+    updateBulkPreview();
+  });
+  $('#btnImport').addEventListener('click', doBulkImport);
+
+  // File drop
+  const drop = $('#fileDrop');
+  $('#fileInput').addEventListener('change', e => handleFile(e.target.files[0]));
+  drop.addEventListener('dragover', e => { e.preventDefault(); drop.classList.add('drag'); });
+  drop.addEventListener('dragleave', () => drop.classList.remove('drag'));
+  drop.addEventListener('drop', e => {
+    e.preventDefault(); drop.classList.remove('drag');
+    if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
+  });
+
+  // Modais
+  $('#btnCancelEdit').addEventListener('click', closeEdit);
+  $('#btnSaveEdit').addEventListener('click', saveEdit);
+  $('#modalEdit').addEventListener('click', e => { if (e.target === $('#modalEdit')) closeEdit(); });
+
+  $('#btnSettings').addEventListener('click', () => {
+    const cfg = loadSupaConfig() || {};
+    $('#supaUrl').value = cfg.url || '';
+    $('#supaKey').value = cfg.key || '';
+    $('#modalSettings').classList.add('open');
+  });
+  $('#btnCancelSettings').addEventListener('click', () => $('#modalSettings').classList.remove('open'));
+  $('#modalSettings').addEventListener('click', e => { if (e.target === $('#modalSettings')) $('#modalSettings').classList.remove('open'); });
+  $('#btnSaveSettings').addEventListener('click', async () => {
+    const url = norm($('#supaUrl').value);
+    const key = norm($('#supaKey').value);
+    if (!url || !key) { toast('Informe a URL e a anon key.', 'warning'); return; }
+    saveSupaConfig({ url, key });
+    const ok = await connectSupabase({ url, key });
+    if (ok) $('#modalSettings').classList.remove('open');
+  });
+  $('#btnDisconnect').addEventListener('click', () => { disconnectSupabase(); $('#modalSettings').classList.remove('open'); });
+  $('#btnPushLocal').addEventListener('click', pushAllLocal);
+
+  // Header
+  $('#btnReload').addEventListener('click', fetchSheet);
+  $('#btnExport').addEventListener('click', exportXlsx);
+
+  // ESC fecha modais
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') {
+      $('#modalEdit').classList.remove('open');
+      $('#modalSettings').classList.remove('open');
+    }
+  });
+}
+
+/* ---------- Init ---------- */
+async function init() {
+  bind();
+  loadCachedSheet();
+  render();
+
+  // Planilha
+  fetchSheet();
+  setInterval(fetchSheet, SHEET_REFRESH_MS);
+
+  // Supabase (se configurado)
+  const cfg = loadSupaConfig();
+  if (cfg && cfg.url && cfg.key) {
+    await connectSupabase(cfg);
+  }
+}
+init();
+</script>
+
+</body>
+</html>
