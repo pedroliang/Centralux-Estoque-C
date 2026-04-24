@@ -344,6 +344,94 @@
   }
   .modal h3 { margin: 0 0 16px; font-size: 16px; }
   .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 18px; }
+
+  /* ---------- Big Result ---------- */
+  .big-result-container {
+    margin-top: 20px;
+    padding: 0;
+    overflow: hidden;
+    background: rgba(18, 24, 38, 0.5);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    display: none;
+    animation: fadeIn 0.3s ease-out;
+  }
+  .big-result-container.active { display: block; }
+  
+  .big-result-header {
+    background: linear-gradient(90deg, rgba(79, 140, 255, 0.15), rgba(168, 85, 247, 0.15));
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--border);
+  }
+  
+  .big-result-body { padding: 24px; }
+  
+  .big-result-code {
+    font-family: "SFMono-Regular", Consolas, monospace;
+    font-size: 14px;
+    color: var(--primary);
+    font-weight: 800;
+    letter-spacing: 1px;
+    margin-bottom: 4px;
+    text-transform: uppercase;
+  }
+  
+  .big-result-desc {
+    font-size: 26px;
+    font-weight: 700;
+    color: var(--text);
+    margin: 0;
+    line-height: 1.2;
+  }
+  
+  .big-result-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 16px;
+    margin-top: 20px;
+  }
+  
+  .big-result-item {
+    background: var(--bg-soft);
+    padding: 14px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  
+  .big-result-item .label {
+    font-size: 10px;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    letter-spacing: 0.5px;
+    font-weight: 600;
+  }
+  
+  .big-result-item .value {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--text);
+  }
+  
+  .big-result-item .value.qty { color: var(--primary); }
+  .big-result-item .value.loc { color: var(--accent); }
+  
+  .big-result-footer {
+    padding: 12px 24px;
+    background: rgba(0, 0, 0, 0.15);
+    font-size: 12px;
+    color: var(--text-dim);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
 </style>
 </head>
 <body>
@@ -468,6 +556,9 @@
         </div>
       </div>
       <div id="searchSummary" style="margin-top:12px; font-size:12px; color:var(--text-dim);"></div>
+      
+      <!-- Container do Resultado Grande -->
+      <div id="bigResult" class="big-result-container"></div>
     </section>
   </div>
 
@@ -791,11 +882,19 @@ function getFilteredItems() {
   const fc = normKey($('#searchCodigo').value);
   const fd = normKey($('#searchDesc').value);
   const fl = normKey($('#searchLocal').value);
+  
+  const matches = (text, term) => {
+    if (!term) return true;
+    const fragments = term.split(/\s+/).filter(Boolean);
+    const t = (text || '').toString().toUpperCase();
+    return fragments.every(f => t.includes(f));
+  };
+
   return items.filter(i => {
-    if (fc && !normKey(i.codigo).includes(fc)) return false;
-    const desc = normKey(lookupDesc(i.codigo) || '');
-    if (fd && !desc.includes(fd)) return false;
-    if (fl && !normKey(i.localizacao).includes(fl)) return false;
+    if (fc && !matches(i.codigo, fc)) return false;
+    const desc = lookupDesc(i.codigo) || '';
+    if (fd && !matches(desc, fd)) return false;
+    if (fl && !matches(i.localizacao, fl)) return false;
     return true;
   });
 }
@@ -865,6 +964,9 @@ function render(highlightCode = null) {
     ? `Exibindo ${list.length} de ${items.length} itens — ${totalQty} peças no filtro atual.`
     : '';
 
+  // Render Big Result
+  renderBigResult(list);
+
   if (highlightCode) {
     const row = tbody.querySelector(`tr[data-code="${normKey(highlightCode)}"]`);
     if (row) {
@@ -876,6 +978,62 @@ function render(highlightCode = null) {
   // Bindings
   tbody.querySelectorAll('[data-edit]').forEach(b => b.addEventListener('click', () => openEdit(b.dataset.edit, b.dataset.loc)));
   tbody.querySelectorAll('[data-del]').forEach(b => b.addEventListener('click', () => deleteItem(b.dataset.del, b.dataset.loc)));
+}
+
+function renderBigResult(list) {
+  const container = $('#bigResult');
+  const sc = $('#searchCodigo').value.trim();
+  const sd = $('#searchDesc').value.trim();
+  const sl = $('#searchLocal').value.trim();
+  
+  // Só mostra se houver algo digitado na busca
+  if (!sc && !sd && !sl) {
+    container.classList.remove('active');
+    container.innerHTML = '';
+    return;
+  }
+  
+  container.classList.add('active');
+  
+  if (list.length === 0) {
+    container.innerHTML = `
+      <div class="big-result-body" style="text-align:center; padding: 40px 20px;">
+        <div style="font-size:40px; margin-bottom:10px;">🔍</div>
+        <div style="color:var(--text-dim);">Nenhum item corresponde à sua pesquisa.</div>
+      </div>`;
+    return;
+  }
+  
+  const it = list[0]; // Mostra o primeiro resultado
+  const desc = lookupDesc(it.codigo) || 'Produto não cadastrado';
+  const when = it.updatedAt ? new Date(it.updatedAt).toLocaleString('pt-BR') : 'Sem data';
+  
+  container.innerHTML = `
+    <div class="big-result-header">
+      <div class="big-result-code">${escapeHtml(it.codigo)}</div>
+      <h3 class="big-result-desc">${escapeHtml(desc)}</h3>
+    </div>
+    <div class="big-result-body">
+      <div class="big-result-grid">
+        <div class="big-result-item">
+          <span class="label">Peças Disponíveis</span>
+          <span class="value qty">${Number(it.qtd) || 0}</span>
+        </div>
+        <div class="big-result-item">
+          <span class="label">Localização</span>
+          <span class="value loc">${escapeHtml(it.localizacao || '—')}</span>
+        </div>
+        <div class="big-result-item">
+          <span class="label">Última Atualização</span>
+          <span class="value" style="font-size:14px; margin-top:6px;">${when}</span>
+        </div>
+      </div>
+    </div>
+    <div class="big-result-footer">
+      <span>${list.length > 1 ? \`+ \${list.length - 1} outros resultados encontrados abaixo\` : 'Resultado único encontrado'}</span>
+      <button class="btn-primary btn-sm" onclick="openEdit('\${escapeHtml(normKey(it.codigo))}', '\${escapeHtml(it.localizacao)}')">Editar este item</button>
+    </div>
+  `;
 }
 
 function escapeHtml(s) {
