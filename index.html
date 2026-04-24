@@ -228,12 +228,18 @@
   /* ---------- Tabs ---------- */
   .tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--border); margin-bottom: 16px; }
   .tab {
-    padding: 10px 16px; cursor: pointer; font-size: 13px; font-weight: 600;
+    padding: 12px 20px; cursor: pointer; font-size: 13px; font-weight: 600;
     color: var(--text-dim); border-bottom: 2px solid transparent;
-    transition: color .15s, border-color .15s;
+    transition: all .2s;
+    display: flex; align-items: center;
+    border-radius: 8px 8px 0 0;
   }
-  .tab.active { color: var(--text); border-color: var(--primary); }
-  .tab:hover { color: var(--text); }
+  .tab.active { 
+    color: var(--primary); 
+    border-bottom: 2px solid var(--primary);
+    background: rgba(79,140,255,0.08);
+  }
+  .tab:hover { color: var(--text); background: rgba(255,255,255,0.03); }
   .tab-content { display: none; }
   .tab-content.active { display: block; }
 
@@ -375,8 +381,12 @@
       <h2><span class="dot"></span> Cadastrar / Importar</h2>
 
       <div class="tabs">
-        <div class="tab active" data-tab="single">Cadastro individual</div>
-        <div class="tab" data-tab="bulk">Importação em lote</div>
+        <div class="tab active" data-tab="single">
+          <span style="margin-right:6px;">📝</span> Cadastro individual
+        </div>
+        <div class="tab" data-tab="bulk">
+          <span style="margin-right:6px;">📊</span> Importar Excel / Lote
+        </div>
       </div>
 
       <!-- Aba 1: Cadastro único -->
@@ -568,7 +578,7 @@ async function upsertItemDB(item) {
     qtd: Number(item.qtd) || 0,
     localizacao: item.localizacao || '',
     updated_at: new Date().toISOString()
-  }, { onConflict: 'codigo, localizacao' });
+  }, { onConflict: 'codigo,localizacao' });
   if (error) { toast('Erro ao salvar: ' + error.message, 'error'); return false; }
   return true;
 }
@@ -972,7 +982,7 @@ async function doBulkImport() {
     updated_at: new Date().toISOString()
   }));
 
-  const { error } = await sb.from('estoque').upsert(dataToUpsert, { onConflict: 'codigo, localizacao' });
+  const { error } = await sb.from('estoque').upsert(dataToUpsert, { onConflict: 'codigo,localizacao' });
 
   if (error) {
     toast('Erro na importação em lote: ' + error.message, 'error');
