@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Centralux Estoque C</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   :root {
@@ -33,7 +33,6 @@
     min-height: 100vh;
     -webkit-font-smoothing: antialiased;
   }
-  /* ---------- Header ---------- */
   header {
     position: sticky; top: 0; z-index: 50;
     backdrop-filter: blur(12px);
@@ -52,8 +51,7 @@
   }
   .brand h1 { margin: 0; font-size: 18px; letter-spacing: .3px; }
   .brand small { display: block; color: var(--text-dim); font-size: 11px; font-weight: 500; }
-  .header-actions { display: flex; gap: 8px; flex-wrap: wrap; }
-  /* ---------- Layout ---------- */
+  .header-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
   main {
     max-width: 1400px; margin: 0 auto;
     padding: 24px 28px 80px;
@@ -61,7 +59,6 @@
   }
   .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
   @media (max-width: 900px) { .grid-2 { grid-template-columns: 1fr; } }
-
   .card {
     background: var(--bg-card);
     border: 1px solid var(--border);
@@ -79,7 +76,6 @@
     width: 6px; height: 6px; border-radius: 50%;
     background: var(--primary);
   }
-  /* ---------- Stats ---------- */
   .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
   @media (max-width: 700px) { .stats { grid-template-columns: repeat(2, 1fr); } }
   .stat {
@@ -87,8 +83,7 @@
     border: 1px solid var(--border);
     border-radius: var(--radius);
     padding: 16px 18px;
-    position: relative;
-    overflow: hidden;
+    position: relative; overflow: hidden;
   }
   .stat::after {
     content: ""; position: absolute; inset: auto -20% -60% auto;
@@ -104,8 +99,6 @@
   .stat.v2 { border-top: 3px solid var(--success); }
   .stat.v3 { border-top: 3px solid var(--warning); }
   .stat.v4 { border-top: 3px solid var(--accent); }
-
-  /* ---------- Form ---------- */
   .form-grid {
     display: grid; grid-template-columns: 1.2fr .6fr 1fr auto; gap: 12px;
     align-items: end;
@@ -156,7 +149,6 @@
   .desc-display.found .pill { background: rgba(34,197,94,.15); color: #4ade80; }
   .desc-display.notfound .pill { background: rgba(239,68,68,.15); color: #fca5a5; }
 
-  /* ---------- Buttons ---------- */
   button, .btn {
     border: none;
     border-radius: 10px;
@@ -164,8 +156,10 @@
     font-size: 14px; font-weight: 600;
     cursor: pointer;
     display: inline-flex; align-items: center; gap: 8px;
-    transition: transform .08s, background .15s, box-shadow .15s, border-color .15s;
+    transition: transform .08s, background .15s, box-shadow .15s, border-color .15s, color .15s;
     font-family: inherit;
+    color: var(--text);
+    background: transparent;
   }
   button:active { transform: translateY(1px); }
   .btn-primary { background: linear-gradient(135deg, var(--primary), var(--primary-dark)); color: #fff; box-shadow: 0 6px 14px rgba(79,140,255,.3); }
@@ -178,18 +172,16 @@
   .btn-danger:hover { background: rgba(239,68,68,.12); }
   .btn-icon {
     padding: 8px; border-radius: 8px;
-    background: transparent; color: var(--text-dim);
+    background: transparent; color: var(--text-dim); border: none;
   }
   .btn-icon:hover { background: var(--bg-hover); color: var(--text); }
   .btn-sm { padding: 7px 12px; font-size: 12px; }
 
-  /* ---------- Search ---------- */
   .search-row {
     display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 12px;
   }
   @media (max-width: 800px) { .search-row { grid-template-columns: 1fr; } }
 
-  /* ---------- Table ---------- */
   .table-wrap { overflow-x: auto; border-radius: 10px; border: 1px solid var(--border); }
   table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
   thead th {
@@ -225,25 +217,22 @@
   .empty-state .icon { font-size: 36px; margin-bottom: 10px; }
   .actions-cell { text-align: right; white-space: nowrap; }
 
-  /* ---------- Tabs ---------- */
-  .tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--border); margin-bottom: 16px; }
-  .tab {
-    padding: 12px 20px; cursor: pointer; font-size: 13px; font-weight: 600;
-    color: var(--text-dim); border-bottom: 2px solid transparent;
-    transition: all .2s;
-    display: flex; align-items: center;
-    border-radius: 8px 8px 0 0;
+  /* ---- Tabs (robustas) ---- */
+  .tabs {
+    display: flex; gap: 4px; border-bottom: 1px solid var(--border); margin-bottom: 16px;
   }
-  .tab.active { 
-    color: var(--primary); 
-    border-bottom: 2px solid var(--primary);
-    background: rgba(79,140,255,0.08);
+  .tab-btn {
+    padding: 10px 16px; cursor: pointer; font-size: 13px; font-weight: 600;
+    color: var(--text-dim); border: none; background: transparent;
+    border-bottom: 2px solid transparent;
+    transition: color .15s, border-color .15s;
+    border-radius: 0;
   }
-  .tab:hover { color: var(--text); background: rgba(255,255,255,0.03); }
-  .tab-content { display: none; }
-  .tab-content.active { display: block; }
+  .tab-btn.active { color: var(--text); border-color: var(--primary); }
+  .tab-btn:hover { color: var(--text); background: transparent; }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
 
-  /* ---------- Bulk import ---------- */
   .file-drop {
     border: 2px dashed var(--border);
     border-radius: 10px;
@@ -252,6 +241,7 @@
     cursor: pointer;
     transition: border-color .15s, background .15s;
     margin-bottom: 12px;
+    display: block;
   }
   .file-drop:hover, .file-drop.drag { border-color: var(--primary); background: rgba(79,140,255,.05); }
   .file-drop .icon { font-size: 30px; margin-bottom: 6px; }
@@ -273,12 +263,12 @@
     display: flex; justify-content: space-between; align-items: center;
     background: var(--bg-soft); border: 1px solid var(--border);
     border-radius: 10px; padding: 10px 14px; margin: 10px 0; font-size: 13px;
+    flex-wrap: wrap; gap: 10px;
   }
-  .preview-bar .counts { display: flex; gap: 16px; }
+  .preview-bar .counts { display: flex; gap: 16px; flex-wrap: wrap; }
   .preview-bar .counts span { display: inline-flex; align-items: center; gap: 6px; }
   .preview-bar .counts .n { font-weight: 700; color: var(--text); font-family: monospace; }
 
-  /* ---------- Toast ---------- */
   .toast-wrap {
     position: fixed; bottom: 22px; right: 22px;
     display: flex; flex-direction: column; gap: 10px; z-index: 100;
@@ -300,22 +290,22 @@
     to   { transform: translateX(0); opacity: 1; }
   }
 
-  /* ---------- Status ---------- */
-  .sheet-status {
+  .status-chip {
     display: inline-flex; align-items: center; gap: 6px;
     font-size: 12px; color: var(--text-dim);
     padding: 6px 10px; background: var(--bg-soft); border-radius: 999px;
     border: 1px solid var(--border);
   }
-  .sheet-status .dot {
+  .status-chip .dot {
     width: 8px; height: 8px; border-radius: 50%; background: var(--warning);
   }
-  .sheet-status.ok .dot { background: var(--success); box-shadow: 0 0 0 3px rgba(34,197,94,.15); }
-  .sheet-status.err .dot { background: var(--danger); }
-  .sheet-status.loading .dot {
+  .status-chip.ok .dot { background: var(--success); box-shadow: 0 0 0 3px rgba(34,197,94,.15); }
+  .status-chip.err .dot { background: var(--danger); }
+  .status-chip.loading .dot {
     background: var(--primary);
     animation: pulse 1s infinite;
   }
+  .status-chip.off .dot { background: var(--text-dim); }
   @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.35} }
 
   .highlight-flash { animation: flash 1.2s; }
@@ -324,13 +314,11 @@
     100% { background: transparent; }
   }
 
-  /* Scrollbar */
   ::-webkit-scrollbar { width: 10px; height: 10px; }
   ::-webkit-scrollbar-track { background: var(--bg); }
   ::-webkit-scrollbar-thumb { background: #2a3550; border-radius: 5px; }
   ::-webkit-scrollbar-thumb:hover { background: #3a476a; }
 
-  /* Modal */
   .modal-backdrop {
     position: fixed; inset: 0; background: rgba(0,0,0,.6);
     display: none; align-items: center; justify-content: center; z-index: 200;
@@ -339,98 +327,16 @@
   .modal-backdrop.open { display: flex; }
   .modal {
     background: var(--bg-card); border: 1px solid var(--border);
-    border-radius: var(--radius); width: 94%; max-width: 520px;
+    border-radius: var(--radius); width: 94%; max-width: 560px;
     box-shadow: var(--shadow); padding: 22px;
+    max-height: 90vh; overflow-y: auto;
   }
   .modal h3 { margin: 0 0 16px; font-size: 16px; }
-  .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 18px; }
+  .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 18px; flex-wrap: wrap; }
 
-  /* ---------- Big Result ---------- */
-  .big-result-container {
-    margin-top: 20px;
-    padding: 0;
-    overflow: hidden;
-    background: rgba(18, 24, 38, 0.5);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    display: none;
-    animation: fadeIn 0.3s ease-out;
-  }
-  .big-result-container.active { display: block; }
-  
-  .big-result-header {
-    background: linear-gradient(90deg, rgba(79, 140, 255, 0.15), rgba(168, 85, 247, 0.15));
-    padding: 20px 24px;
-    border-bottom: 1px solid var(--border);
-  }
-  
-  .big-result-body { padding: 24px; }
-  
-  .big-result-code {
-    font-family: "SFMono-Regular", Consolas, monospace;
-    font-size: 14px;
-    color: var(--primary);
-    font-weight: 800;
-    letter-spacing: 1px;
-    margin-bottom: 4px;
-    text-transform: uppercase;
-  }
-  
-  .big-result-desc {
-    font-size: 26px;
-    font-weight: 700;
-    color: var(--text);
-    margin: 0;
-    line-height: 1.2;
-  }
-  
-  .big-result-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-    gap: 16px;
-    margin-top: 20px;
-  }
-  
-  .big-result-item {
-    background: var(--bg-soft);
-    padding: 14px;
-    border-radius: 12px;
-    border: 1px solid var(--border);
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-  }
-  
-  .big-result-item .label {
-    font-size: 10px;
-    text-transform: uppercase;
-    color: var(--text-dim);
-    letter-spacing: 0.5px;
-    font-weight: 600;
-  }
-  
-  .big-result-item .value {
-    font-size: 22px;
-    font-weight: 700;
-    color: var(--text);
-  }
-  
-  .big-result-item .value.qty { color: var(--primary); }
-  .big-result-item .value.loc { color: var(--accent); }
-  
-  .big-result-footer {
-    padding: 12px 24px;
-    background: rgba(0, 0, 0, 0.15);
-    font-size: 12px;
-    color: var(--text-dim);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-  
-  @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
+  .kbd {
+    font-family: monospace; font-size: 11px; padding: 2px 6px;
+    background: rgba(255,255,255,.06); border-radius: 4px; color: #cbd5ff;
   }
 </style>
 </head>
@@ -441,21 +347,24 @@
     <div class="logo">CE</div>
     <div>
       <h1>Centralux Estoque C</h1>
-      <small>Controle de estoque com sincronização em planilha</small>
+      <small>Controle de estoque com sincronização em tempo real</small>
     </div>
   </div>
   <div class="header-actions">
-    <div id="sheetStatus" class="sheet-status loading">
+    <div id="sheetStatus" class="status-chip loading" title="Status da planilha">
       <span class="dot"></span> <span id="sheetStatusText">Carregando planilha...</span>
     </div>
-    <button class="btn-ghost btn-sm" id="btnReload" title="Recarregar dados da planilha">Atualizar planilha</button>
-    <button class="btn-ghost btn-sm" id="btnExport" title="Exportar cadastro para Excel">Exportar</button>
+    <div id="cloudStatus" class="status-chip off" title="Status do Supabase">
+      <span class="dot"></span> <span id="cloudStatusText">Nuvem desativada</span>
+    </div>
+    <button type="button" class="btn-ghost btn-sm" id="btnReload">Atualizar planilha</button>
+    <button type="button" class="btn-ghost btn-sm" id="btnSettings">Configurar nuvem</button>
+    <button type="button" class="btn-ghost btn-sm" id="btnExport">Exportar</button>
   </div>
 </header>
 
 <main>
 
-  <!-- Stats -->
   <section class="stats">
     <div class="stat v1"><div class="label">Itens cadastrados</div><div class="value" id="statItems">0</div></div>
     <div class="stat v2"><div class="label">Total de peças</div><div class="value" id="statPieces">0</div></div>
@@ -464,22 +373,16 @@
   </section>
 
   <div class="grid-2">
-    <!-- Cadastro -->
     <section class="card">
       <h2><span class="dot"></span> Cadastrar / Importar</h2>
 
-      <div class="tabs">
-        <div class="tab active" data-tab="single">
-          <span style="margin-right:6px;">📝</span> Cadastro individual
-        </div>
-        <div class="tab" data-tab="bulk">
-          <span style="margin-right:6px;">📊</span> Importar Excel / Lote
-        </div>
+      <div class="tabs" role="tablist">
+        <button type="button" class="tab-btn active" data-tab="single" role="tab">Cadastro individual</button>
+        <button type="button" class="tab-btn" data-tab="bulk" role="tab">Importação em lote</button>
       </div>
 
-      <!-- Aba 1: Cadastro único -->
-      <div class="tab-content active" data-content="single">
-        <form id="formSingle">
+      <div class="tab-panel active" data-panel="single">
+        <form id="formSingle" autocomplete="off">
           <div class="form-grid">
             <div>
               <label for="codigo">Código</label>
@@ -504,11 +407,10 @@
         </form>
       </div>
 
-      <!-- Aba 2: Importação em lote -->
-      <div class="tab-content" data-content="bulk">
+      <div class="tab-panel" data-panel="bulk">
         <div class="hint">
           Cole do Excel (3 colunas: <code>Código | Peças | Localização</code>) ou arraste um arquivo
-          <code>.xlsx</code> / <code>.csv</code>. O sistema buscará a descrição de cada código automaticamente.
+          <code>.xlsx</code> / <code>.csv</code>. A descrição de cada código será preenchida automaticamente.
         </div>
 
         <label for="fileInput" class="file-drop" id="fileDrop">
@@ -518,7 +420,7 @@
           <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" style="display:none" />
         </label>
 
-        <label for="bulkPaste">Ou cole do Excel (Ctrl+V)</label>
+        <label for="bulkPaste">Ou cole do Excel <span class="kbd">Ctrl</span>+<span class="kbd">V</span></label>
         <textarea id="bulkPaste" placeholder="Código&#9;Peças&#9;Localização&#10;12345&#9;10&#9;A-03&#10;98765&#9;5&#9;B-12"></textarea>
 
         <div class="preview-bar" id="bulkPreview" style="display:none">
@@ -535,7 +437,6 @@
       </div>
     </section>
 
-    <!-- Busca -->
     <section class="card">
       <h2><span class="dot" style="background:var(--accent)"></span> Buscar no estoque</h2>
       <div class="search-row">
@@ -556,13 +457,9 @@
         </div>
       </div>
       <div id="searchSummary" style="margin-top:12px; font-size:12px; color:var(--text-dim);"></div>
-      
-      <!-- Container do Resultado Grande -->
-      <div id="bigResult" class="big-result-container"></div>
     </section>
   </div>
 
-  <!-- Tabela -->
   <section class="card">
     <h2 style="display:flex; justify-content: space-between; align-items:center;">
       <span style="display:inline-flex; align-items:center; gap:8px;">
@@ -592,7 +489,7 @@
 </main>
 
 <!-- Modal editar -->
-<div class="modal-backdrop" id="modal">
+<div class="modal-backdrop" id="modalEdit">
   <div class="modal">
     <h3>Editar item</h3>
     <div style="display:grid; gap:12px;">
@@ -616,8 +513,53 @@
       </div>
     </div>
     <div class="modal-actions">
-      <button class="btn-ghost" id="btnCancelEdit">Cancelar</button>
-      <button class="btn-primary" id="btnSaveEdit">Salvar</button>
+      <button type="button" class="btn-ghost" id="btnCancelEdit">Cancelar</button>
+      <button type="button" class="btn-primary" id="btnSaveEdit">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal configurações (Supabase) -->
+<div class="modal-backdrop" id="modalSettings">
+  <div class="modal">
+    <h3>Configurar sincronização na nuvem (Supabase)</h3>
+    <div class="hint" style="margin-top:0;">
+      Os dados passarão a ser salvos no Supabase e sincronizados em tempo real entre dispositivos.<br>
+      Pegue <code>Project URL</code> e <code>anon public key</code> em:
+      <strong>Supabase Dashboard → seu projeto → Settings → API</strong>.
+    </div>
+    <div style="display:grid; gap:12px;">
+      <div>
+        <label>Project URL</label>
+        <input type="text" id="supaUrl" placeholder="https://xxxxxxxx.supabase.co" />
+      </div>
+      <div>
+        <label>anon / public key</label>
+        <input type="text" id="supaKey" placeholder="eyJhbGciOiJIUzI1NiIs..." />
+      </div>
+      <details>
+        <summary style="cursor:pointer; font-size:12px; color:var(--text-dim)">SQL para criar a tabela (copie no SQL Editor do Supabase)</summary>
+        <pre style="background:var(--bg-soft); border:1px solid var(--border); padding:12px; border-radius:8px; overflow:auto; font-size:11px; margin-top:8px;">-- rode uma vez no SQL Editor do seu projeto Supabase:
+create table if not exists items (
+  id uuid primary key default gen_random_uuid(),
+  codigo text not null unique,
+  qtd integer not null default 0,
+  localizacao text,
+  updated_at timestamptz default now()
+);
+alter table items enable row level security;
+create policy "leitura publica"   on items for select using (true);
+create policy "insercao publica"  on items for insert with check (true);
+create policy "update publico"    on items for update using (true) with check (true);
+create policy "delete publico"    on items for delete using (true);
+alter publication supabase_realtime add table items;</pre>
+      </details>
+    </div>
+    <div class="modal-actions">
+      <button type="button" class="btn-danger" id="btnDisconnect">Desconectar</button>
+      <button type="button" class="btn-ghost" id="btnCancelSettings">Cancelar</button>
+      <button type="button" class="btn-ghost" id="btnPushLocal" title="Envia itens do cache local para o Supabase">Enviar locais → nuvem</button>
+      <button type="button" class="btn-primary" id="btnSaveSettings">Salvar e conectar</button>
     </div>
   </div>
 </div>
@@ -626,129 +568,89 @@
 
 <script>
 /* =================================================================
-   Centralux Estoque C — Supabase Edition
+   Centralux Estoque C
    ================================================================= */
-
-const SUPABASE_URL = 'https://owczlboltrcuawbgwnvi.supabase.co';
-const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im93Y3psYm9sdHJjdWF3Ymd3bnZpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcwMzkxNzAsImV4cCI6MjA5MjYxNTE3MH0.qed9dF3704pYq3KaPTxu3EYzCB7rA7w8TJuN9ir0spM';
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
 const SHEET_ID  = '1fRqUo8vH4awjCwV12U0fhR2bdBSRGFUVMlU8PozUsoQ';
 const SHEET_GID = '1556491081';
+const LS_ITEMS  = 'centralux.items.v1';
 const LS_SHEET  = 'centralux.sheet.v1';
+const LS_SUPA   = 'centralux.supa.v1';
+const SHEET_REFRESH_MS = 10 * 60 * 1000; // 10 minutos
 
 /* ---------- State ---------- */
-let sheetMap  = new Map();     // código -> descrição
-let items     = [];            // [{codigo, qtd, localizacao, updatedAt}]
-let bulkRows  = [];            // parsed pending import rows
+let sheetMap  = new Map();
+let items     = loadItems();
+let bulkRows  = [];
 let sortKey   = 'updatedAt';
 let sortDir   = -1;
+let supa      = null;   // supabase client when connected
+let supaChan  = null;   // realtime channel
 
-/* ---------- Utilities ---------- */
+/* ---------- Utils ---------- */
 const $  = s => document.querySelector(s);
-const $$ = s => document.querySelectorAll(s);
-const norm = s => (s ?? '').toString().trim();
-const normKey = s => norm(s).toUpperCase().replace(/\s+/g,' ');
+const $$ = s => Array.from(document.querySelectorAll(s));
+const norm    = s => (s ?? '').toString().trim();
+const normKey = s => norm(s).toUpperCase().replace(/\s+/g, ' ');
 
-/* ---------- Supabase CRUD ---------- */
-async function loadItemsFromDB() {
-  const { data, error } = await sb.from('estoque').select('*').order('updated_at', { ascending: false });
-  if (error) { toast('Erro ao carregar dados: ' + error.message, 'error'); return; }
-  items = (data || []).map(r => ({
-    codigo: r.codigo,
-    qtd: r.qtd,
-    localizacao: r.localizacao,
-    updatedAt: new Date(r.updated_at).getTime()
-  }));
-  render();
+function escapeHtml(s) {
+  return (s ?? '').toString().replace(/[&<>"']/g, m => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 }
 
-async function upsertItemDB(item) {
-  const { error } = await sb.from('estoque').upsert({
-    codigo: item.codigo,
-    qtd: Number(item.qtd) || 0,
-    localizacao: item.localizacao || '',
-    updated_at: new Date().toISOString()
-  }, { onConflict: 'codigo,localizacao' });
-  if (error) { toast('Erro ao salvar: ' + error.message, 'error'); return false; }
-  return true;
+function loadItems() {
+  try { return JSON.parse(localStorage.getItem(LS_ITEMS)) || []; }
+  catch { return []; }
 }
-
-async function deleteItemDB(codigo, localizacao) {
-  const { error } = await sb.from('estoque').delete().eq('codigo', codigo).eq('localizacao', localizacao);
-  if (error) { toast('Erro ao excluir: ' + error.message, 'error'); return false; }
-  return true;
+function saveItems() {
+  localStorage.setItem(LS_ITEMS, JSON.stringify(items));
 }
-
 function loadCachedSheet() {
   try {
     const data = JSON.parse(localStorage.getItem(LS_SHEET));
     if (data && data.map) {
       sheetMap = new Map(data.map);
-      setSheetStatus('ok', `Planilha em cache (${sheetMap.size} produtos)`);
+      const age = data.at ? Math.round((Date.now() - data.at) / 60000) : 0;
+      setSheetStatus('ok', `Planilha em cache (${sheetMap.size} produtos, ${age}min atrás)`);
       updateStats();
     }
   } catch {}
 }
 function saveCachedSheet() {
-  const entries = Array.from(sheetMap.entries());
-  localStorage.setItem(LS_SHEET, JSON.stringify({ 
-    map: entries, 
-    at: Date.now(),
-    count: entries.length 
+  localStorage.setItem(LS_SHEET, JSON.stringify({
+    map: Array.from(sheetMap.entries()),
+    at: Date.now()
   }));
 }
 
 /* ---------- Toasts ---------- */
-function toast(msg, type='') {
+function toast(msg, type = '') {
   const el = document.createElement('div');
   el.className = 'toast ' + type;
   el.textContent = msg;
   $('#toasts').appendChild(el);
-  setTimeout(() => { el.style.opacity = '0'; el.style.transform = 'translateX(20px)'; }, 2800);
-  setTimeout(() => el.remove(), 3200);
+  setTimeout(() => { el.style.opacity = '0'; el.style.transform = 'translateX(20px)'; }, 3200);
+  setTimeout(() => el.remove(), 3700);
 }
 
-/* ---------- Sheet status chip ---------- */
+/* ---------- Status chips ---------- */
 function setSheetStatus(kind, text) {
   const el = $('#sheetStatus');
-  el.className = 'sheet-status ' + kind;
+  el.className = 'status-chip ' + kind;
   $('#sheetStatusText').textContent = text;
 }
-
-/* ---------- CSV parser (handles quoted fields) ---------- */
-function parseCSV(text) {
-  const rows = [];
-  let row = [], cur = '', inQ = false;
-  for (let i = 0; i < text.length; i++) {
-    const c = text[i];
-    if (inQ) {
-      if (c === '"' && text[i+1] === '"') { cur += '"'; i++; }
-      else if (c === '"') inQ = false;
-      else cur += c;
-    } else {
-      if (c === '"') inQ = true;
-      else if (c === ',') { row.push(cur); cur = ''; }
-      else if (c === '\n') { row.push(cur); rows.push(row); row=[]; cur=''; }
-      else if (c === '\r') { /* skip */ }
-      else cur += c;
-    }
-  }
-  if (cur.length || row.length) { row.push(cur); rows.push(row); }
-  return rows;
+function setCloudStatus(kind, text) {
+  const el = $('#cloudStatus');
+  el.className = 'status-chip ' + kind;
+  $('#cloudStatusText').textContent = text;
 }
 
-/* ---------- Fetch Google Sheet (JSONP via gviz — funciona em file://) ---------- */
-let lastSyncTime = null;
-
+/* ---------- Google Sheets via JSONP (gviz) ---------- */
 function fetchSheet() {
   return new Promise(resolve => {
-    setSheetStatus('loading', 'Sincronizando planilha...');
+    setSheetStatus('loading', 'Atualizando planilha...');
 
     const cbName = '__centralux_cb_' + Math.random().toString(36).slice(2);
-    let done = false;
-    let script = null;
-    let timeoutId = null;
+    let done = false, script = null, timeoutId = null;
 
     const cleanup = () => {
       if (timeoutId) clearTimeout(timeoutId);
@@ -762,32 +664,26 @@ function fetchSheet() {
         if (!data || data.status === 'error') {
           const msg = (data && data.errors && data.errors[0] && data.errors[0].detailed_message)
             || 'Resposta inválida da planilha';
-          
-          if (sheetMap.size > 0) {
-            setSheetStatus('ok', `Offline (${sheetMap.size} itens)`);
-          } else {
-            setSheetStatus('err', 'Erro na planilha');
-          }
-          toast('Erro ao sincronizar: ' + msg, 'error');
+          setSheetStatus('err', 'Falha na planilha');
+          toast('Erro: ' + msg, 'error');
           cleanup(); resolve(false); return;
         }
-        
         const table = data.table;
-        if (!table || !table.rows) {
-          setSheetStatus('err', 'Planilha vazia');
+        if (!table || !table.cols || !table.rows) {
+          setSheetStatus('err', 'Planilha sem dados');
           cleanup(); resolve(false); return;
         }
 
-        // Se usamos select A,C, as colunas são fixas: 0=Code, 1=Desc
-        // Mas vamos manter a detecção por segurança caso o query mude
+        // Conforme solicitado: coluna A = código, coluna C = descrição
+        // Mesmo assim fazemos detecção por cabeçalho como fallback.
         const cols = table.cols.map(c => normKey(c.label || c.id || ''));
-        let codeIdx = cols.findIndex(h => /^COD/i.test(h) || h === 'A');
-        let descIdx = cols.findIndex(h => /DESC/i.test(h) || h === 'C' || h === 'B');
-        
+        let codeIdx = cols.findIndex(h => /^COD(IGO)?$|CODE/i.test(h) || h.indexOf('CODIG') !== -1);
+        let descIdx = cols.findIndex(h => /DESCRI/i.test(h) || h === 'PRODUTO' || h === 'ITEM' || h === 'NOME');
+        // Se não achou, usa A e C fixos (índices 0 e 2)
         if (codeIdx === -1) codeIdx = 0;
-        if (descIdx === -1) descIdx = (cols.length > 1 ? 1 : 0);
+        if (descIdx === -1) descIdx = Math.min(2, cols.length - 1);
 
-        const newMap = new Map();
+        const novo = new Map();
         for (const r of table.rows) {
           if (!r || !r.c) continue;
           const cCell = r.c[codeIdx];
@@ -796,116 +692,205 @@ function fetchSheet() {
           const rawDesc = dCell ? (dCell.v != null ? dCell.v : dCell.f) : '';
           const code = normKey(rawCode);
           const desc = norm(rawDesc);
-          if (code && desc) newMap.set(code, desc);
+          if (code && desc) novo.set(code, desc);
         }
 
-        if (newMap.size > 0) {
-          sheetMap = newMap;
-          lastSyncTime = new Date();
-          saveCachedSheet();
-          const timeStr = lastSyncTime.toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'});
-          setSheetStatus('ok', `Sincronizado às ${timeStr} (${sheetMap.size} itens)`);
-          updateStats();
-          render();
-          onCodigoInput();
-        }
-        
+        sheetMap = novo;
+        saveCachedSheet();
+        setSheetStatus('ok', `Planilha sincronizada (${sheetMap.size} produtos)`);
+        updateStats();
+        render();
+        onCodigoInput();
+        updateBulkPreview();
         cleanup(); resolve(true);
       } catch (e) {
-        console.error('Erro no callback da planilha:', e);
-        if (sheetMap.size > 0) {
-          setSheetStatus('ok', `Usando cache (${sheetMap.size} itens)`);
-        } else {
-          setSheetStatus('err', 'Erro ao processar');
-        }
+        setSheetStatus('err', 'Erro ao processar planilha');
+        toast('Erro: ' + e.message, 'error');
         cleanup(); resolve(false);
       }
     };
 
     script = document.createElement('script');
-    // Adicionado tq=select A,C para carregar apenas Código e Descrição
     script.src = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq`
                + `?tqx=out:json;responseHandler:${cbName}`
-               + `&gid=${SHEET_GID}&headers=1&tq=select%20A,C`;
-    
+               + `&gid=${SHEET_GID}&headers=1`;
     script.onerror = () => {
       if (done) return; done = true;
-      if (sheetMap.size > 0) {
-        setSheetStatus('ok', `Modo Offline (${sheetMap.size} itens)`);
+      // Só mostra erro se ainda não temos cache
+      if (sheetMap.size === 0) {
+        setSheetStatus('err', 'Sem conexão com a planilha');
       } else {
-        setSheetStatus('err', 'Erro de conexão');
+        setSheetStatus('ok', `Usando cache (${sheetMap.size} produtos)`);
       }
-      toast('Não foi possível conectar à planilha. Usando dados locais.', 'warning');
       cleanup(); resolve(false);
     };
-
     timeoutId = setTimeout(() => {
       if (done) return; done = true;
-      if (sheetMap.size > 0) {
-        setSheetStatus('ok', `Tempo esgotado (Cache: ${sheetMap.size})`);
-      } else {
-        setSheetStatus('err', 'Tempo esgotado');
-      }
-      toast('Tempo esgotado ao sincronizar. Usando cache.', 'warning');
+      if (sheetMap.size === 0) setSheetStatus('err', 'Tempo esgotado');
+      else setSheetStatus('ok', `Usando cache (${sheetMap.size} produtos)`);
       cleanup(); resolve(false);
-    }, 25000); // Aumentado para 25s
+    }, 15000);
 
     document.body.appendChild(script);
   });
 }
 
-function lookupDesc(code) {
-  return sheetMap.get(normKey(code)) || null;
+function lookupDesc(code) { return sheetMap.get(normKey(code)) || null; }
+
+/* ---------- Supabase ---------- */
+function loadSupaConfig() {
+  try { return JSON.parse(localStorage.getItem(LS_SUPA)); } catch { return null; }
+}
+function saveSupaConfig(cfg) {
+  if (cfg) localStorage.setItem(LS_SUPA, JSON.stringify(cfg));
+  else     localStorage.removeItem(LS_SUPA);
 }
 
-/* ---------- Form - single register ---------- */
+async function connectSupabase(cfg) {
+  if (!cfg || !cfg.url || !cfg.key) { setCloudStatus('off', 'Nuvem desativada'); return false; }
+  if (typeof window.supabase === 'undefined' || !window.supabase.createClient) {
+    setCloudStatus('err', 'Biblioteca Supabase indisponível');
+    return false;
+  }
+  setCloudStatus('loading', 'Conectando à nuvem...');
+  try {
+    supa = window.supabase.createClient(cfg.url, cfg.key, {
+      realtime: { params: { eventsPerSecond: 10 } }
+    });
+    // Teste rápido
+    const { data, error } = await supa.from('items').select('*').limit(1);
+    if (error) throw error;
+
+    // Baixa tudo
+    const { data: rows, error: err2 } = await supa.from('items').select('*').order('updated_at', { ascending: false });
+    if (err2) throw err2;
+
+    items = (rows || []).map(r => ({
+      codigo: r.codigo,
+      qtd: r.qtd || 0,
+      localizacao: r.localizacao || '',
+      updatedAt: r.updated_at ? new Date(r.updated_at).getTime() : Date.now()
+    }));
+    saveItems(); render();
+
+    // Realtime
+    if (supaChan) await supa.removeChannel(supaChan);
+    supaChan = supa.channel('centralux_items')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'items' }, payload => {
+        handleRealtime(payload);
+      })
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') setCloudStatus('ok', `Nuvem conectada (${items.length})`);
+      });
+
+    setCloudStatus('ok', `Nuvem conectada (${items.length})`);
+    toast('Sincronização na nuvem ativada.', 'success');
+    return true;
+  } catch (e) {
+    setCloudStatus('err', 'Falha na nuvem');
+    toast('Supabase: ' + (e.message || e), 'error');
+    supa = null;
+    return false;
+  }
+}
+
+function disconnectSupabase() {
+  if (supaChan && supa) supa.removeChannel(supaChan).catch(()=>{});
+  supa = null; supaChan = null;
+  saveSupaConfig(null);
+  setCloudStatus('off', 'Nuvem desativada');
+  toast('Desconectado da nuvem.', 'warning');
+}
+
+function handleRealtime(payload) {
+  const evt = payload.eventType || payload.event;
+  const row = payload.new || payload.old;
+  if (!row) return;
+  const key = normKey(row.codigo || (payload.old && payload.old.codigo));
+  if (evt === 'DELETE') {
+    items = items.filter(i => normKey(i.codigo) !== key);
+  } else {
+    const mapped = {
+      codigo: row.codigo,
+      qtd: row.qtd || 0,
+      localizacao: row.localizacao || '',
+      updatedAt: row.updated_at ? new Date(row.updated_at).getTime() : Date.now()
+    };
+    const idx = items.findIndex(i => normKey(i.codigo) === key);
+    if (idx >= 0) items[idx] = mapped; else items.unshift(mapped);
+  }
+  saveItems(); render();
+  setCloudStatus('ok', `Nuvem conectada (${items.length})`);
+}
+
+async function cloudUpsert(it) {
+  if (!supa) return;
+  try {
+    await supa.from('items').upsert({
+      codigo: it.codigo,
+      qtd: Number(it.qtd) || 0,
+      localizacao: it.localizacao || '',
+      updated_at: new Date(it.updatedAt || Date.now()).toISOString()
+    }, { onConflict: 'codigo' });
+  } catch (e) { toast('Erro nuvem: ' + e.message, 'error'); }
+}
+async function cloudDelete(codigo) {
+  if (!supa) return;
+  try { await supa.from('items').delete().eq('codigo', codigo); }
+  catch (e) { toast('Erro nuvem: ' + e.message, 'error'); }
+}
+async function pushAllLocal() {
+  if (!supa) { toast('Conecte-se à nuvem primeiro.', 'warning'); return; }
+  if (!items.length) { toast('Nada local para enviar.', 'warning'); return; }
+  try {
+    const payload = items.map(i => ({
+      codigo: i.codigo, qtd: Number(i.qtd)||0,
+      localizacao: i.localizacao || '',
+      updated_at: new Date(i.updatedAt || Date.now()).toISOString()
+    }));
+    const { error } = await supa.from('items').upsert(payload, { onConflict: 'codigo' });
+    if (error) throw error;
+    toast(`Enviados ${payload.length} itens para a nuvem.`, 'success');
+  } catch (e) { toast('Erro: ' + e.message, 'error'); }
+}
+
+/* ---------- Form ---------- */
 function onCodigoInput() {
   const code = norm($('#codigo').value);
   const box  = $('#descBox');
   const txt  = $('#descText');
+  const pill = box.querySelector('.pill');
   if (!code) {
     box.className = 'desc-display';
+    pill.textContent = 'Descrição';
     txt.textContent = 'Digite um código para buscar a descrição na planilha.';
     return;
   }
   const desc = lookupDesc(code);
-  const existing = items.filter(it => normKey(it.codigo) === normKey(code));
-  
-  let html = desc ? `<strong>${escapeHtml(desc)}</strong>` : 'Produto não cadastrado';
-  
-  if (existing.length > 0) {
-    const locs = existing.map(it => it.localizacao).join(', ');
-    html += `<div style="margin-top:4px; font-size:11px; color:var(--warning)">⚠️ Já está em: ${escapeHtml(locs)}</div>`;
-  }
-
   if (desc) {
     box.className = 'desc-display found';
-    txt.innerHTML = html;
-    box.querySelector('.pill').textContent = existing.length > 0 ? 'Duplicado' : 'Encontrado';
+    pill.textContent = 'Encontrado';
+    txt.innerHTML = `<strong>${escapeHtml(desc)}</strong>`;
   } else {
     box.className = 'desc-display notfound';
-    txt.innerHTML = html;
-    box.querySelector('.pill').textContent = 'Não encontrado';
+    pill.textContent = 'Não encontrado';
+    txt.textContent = 'Produto não cadastrado';
   }
 }
 
-function addOrUpdateItemLocal({ codigo, qtd, localizacao }) {
+function addOrUpdateItem({ codigo, qtd, localizacao }) {
   const key = normKey(codigo);
   const idx = items.findIndex(it => normKey(it.codigo) === key);
   const now = Date.now();
-  if (idx >= 0) {
-    items[idx].qtd = Number(qtd) || 0;
-    items[idx].localizacao = localizacao;
-    items[idx].updatedAt = now;
-    items[idx].codigo = codigo;
-    return { updated: true, index: idx };
-  } else {
-    items.unshift({ codigo, qtd: Number(qtd) || 0, localizacao, updatedAt: now });
-    return { updated: false, index: 0 };
-  }
+  const record = { codigo, qtd: Number(qtd)||0, localizacao, updatedAt: now };
+  if (idx >= 0) { items[idx] = record; }
+  else          { items.unshift(record); }
+  saveItems();
+  cloudUpsert(record);
+  return { updated: idx >= 0 };
 }
 
-/* ---------- Table render ---------- */
+/* ---------- Render ---------- */
 function updateStats() {
   $('#statItems').textContent = items.length;
   $('#statPieces').textContent = items.reduce((s, i) => s + (Number(i.qtd) || 0), 0);
@@ -917,19 +902,11 @@ function getFilteredItems() {
   const fc = normKey($('#searchCodigo').value);
   const fd = normKey($('#searchDesc').value);
   const fl = normKey($('#searchLocal').value);
-  
-  const matches = (text, term) => {
-    if (!term) return true;
-    const fragments = term.split(/\s+/).filter(Boolean);
-    const t = (text || '').toString().toUpperCase();
-    return fragments.every(f => t.includes(f));
-  };
-
   return items.filter(i => {
-    if (fc && !matches(i.codigo, fc)) return false;
-    const desc = lookupDesc(i.codigo) || '';
-    if (fd && !matches(desc, fd)) return false;
-    if (fl && !matches(i.localizacao, fl)) return false;
+    if (fc && !normKey(i.codigo).includes(fc)) return false;
+    const desc = normKey(lookupDesc(i.codigo) || '');
+    if (fd && !desc.includes(fd)) return false;
+    if (fl && !normKey(i.localizacao).includes(fl)) return false;
     return true;
   });
 }
@@ -950,7 +927,7 @@ function sortItems(arr) {
       vb = (b[sortKey] || '').toString().toLowerCase();
     }
     if (va < vb) return -1 * dir;
-    if (va > vb) return 1 * dir;
+    if (va > vb) return  1 * dir;
     return 0;
   });
 }
@@ -971,36 +948,25 @@ function render(highlightCode = null) {
         ? `<span class="desc-cell">${escapeHtml(desc)}</span>`
         : `<span class="desc-cell none">Produto não cadastrado</span>`;
       const when = it.updatedAt ? new Date(it.updatedAt).toLocaleString('pt-BR', {day:'2-digit', month:'2-digit', year:'2-digit', hour:'2-digit', minute:'2-digit'}) : '';
-      
-      const isDup = items.filter(x => normKey(x.codigo) === normKey(it.codigo)).length > 1;
-      const rowStyle = isDup ? 'border-left: 3px solid var(--warning);' : '';
-
       return `
-      <tr data-code="${escapeHtml(normKey(it.codigo))}" style="${rowStyle}">
-        <td class="code-cell">
-          ${escapeHtml(it.codigo)}
-          ${isDup ? '<span title="Este código possui múltiplas localizações" style="cursor:help; margin-left:4px;">⚠️</span>' : ''}
-        </td>
+      <tr data-code="${escapeHtml(normKey(it.codigo))}">
+        <td class="code-cell">${escapeHtml(it.codigo)}</td>
         <td>${descHtml}</td>
         <td style="text-align:center"><span class="qty-badge">${Number(it.qtd)||0}</span></td>
         <td>${it.localizacao ? `<span class="loc-chip">${escapeHtml(it.localizacao)}</span>` : ''}</td>
         <td style="color:var(--text-dim); font-size:12px;">${when}</td>
         <td class="actions-cell">
-          <button class="btn-icon" data-edit="${escapeHtml(normKey(it.codigo))}" data-loc="${escapeHtml(it.localizacao)}" title="Editar">✏️</button>
-          <button class="btn-icon" data-del="${escapeHtml(normKey(it.codigo))}" data-loc="${escapeHtml(it.localizacao)}" title="Excluir">🗑️</button>
+          <button type="button" class="btn-icon" data-edit="${escapeHtml(normKey(it.codigo))}" title="Editar">✏️</button>
+          <button type="button" class="btn-icon" data-del="${escapeHtml(normKey(it.codigo))}" title="Excluir">🗑️</button>
         </td>
       </tr>`;
     }).join('');
   }
 
-  // Summary
   const totalQty = list.reduce((s, i) => s + (Number(i.qtd)||0), 0);
   $('#searchSummary').textContent = list.length
     ? `Exibindo ${list.length} de ${items.length} itens — ${totalQty} peças no filtro atual.`
     : '';
-
-  // Render Big Result
-  renderBigResult(list);
 
   if (highlightCode) {
     const row = tbody.querySelector(`tr[data-code="${normKey(highlightCode)}"]`);
@@ -1010,142 +976,73 @@ function render(highlightCode = null) {
     }
   }
 
-  // Bindings
-  tbody.querySelectorAll('[data-edit]').forEach(b => b.addEventListener('click', () => openEdit(b.dataset.edit, b.dataset.loc)));
-  tbody.querySelectorAll('[data-del]').forEach(b => b.addEventListener('click', () => deleteItem(b.dataset.del, b.dataset.loc)));
-}
-
-function renderBigResult(list) {
-  const container = $('#bigResult');
-  const sc = $('#searchCodigo').value.trim();
-  const sd = $('#searchDesc').value.trim();
-  const sl = $('#searchLocal').value.trim();
-  
-  // Só mostra se houver algo digitado na busca
-  if (!sc && !sd && !sl) {
-    container.classList.remove('active');
-    container.innerHTML = '';
-    return;
-  }
-  
-  container.classList.add('active');
-  
-  if (list.length === 0) {
-    container.innerHTML = `
-      <div class="big-result-body" style="text-align:center; padding: 40px 20px;">
-        <div style="font-size:40px; margin-bottom:10px;">🔍</div>
-        <div style="color:var(--text-dim);">Nenhum item corresponde à sua pesquisa.</div>
-      </div>`;
-    return;
-  }
-  
-  const it = list[0]; // Mostra o primeiro resultado
-  const desc = lookupDesc(it.codigo) || 'Produto não cadastrado';
-  const when = it.updatedAt ? new Date(it.updatedAt).toLocaleString('pt-BR') : 'Sem data';
-  
-  container.innerHTML = `
-    <div class="big-result-header">
-      <div class="big-result-code">${escapeHtml(it.codigo)}</div>
-      <h3 class="big-result-desc">${escapeHtml(desc)}</h3>
-    </div>
-    <div class="big-result-body">
-      <div class="big-result-grid">
-        <div class="big-result-item">
-          <span class="label">Peças Disponíveis</span>
-          <span class="value qty">${Number(it.qtd) || 0}</span>
-        </div>
-        <div class="big-result-item">
-          <span class="label">Localização</span>
-          <span class="value loc">${escapeHtml(it.localizacao || '—')}</span>
-        </div>
-        <div class="big-result-item">
-          <span class="label">Última Atualização</span>
-          <span class="value" style="font-size:14px; margin-top:6px;">${when}</span>
-        </div>
-      </div>
-    </div>
-    <div class="big-result-footer">
-      <span>${list.length > 1 ? \`+ \${list.length - 1} outros resultados encontrados abaixo\` : 'Resultado único encontrado'}</span>
-      <button class="btn-primary btn-sm" onclick="openEdit('\${escapeHtml(normKey(it.codigo))}', '\${escapeHtml(it.localizacao)}')">Editar este item</button>
-    </div>
-  `;
-}
-
-function escapeHtml(s) {
-  return (s ?? '').toString().replace(/[&<>"']/g, m => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  tbody.querySelectorAll('[data-edit]').forEach(b => b.addEventListener('click', () => openEdit(b.dataset.edit)));
+  tbody.querySelectorAll('[data-del]').forEach(b => b.addEventListener('click', () => deleteItem(b.dataset.del)));
 }
 
 /* ---------- Edit / delete ---------- */
 let editingKey = null;
-let editingLoc = null;
-function openEdit(key, loc) {
-  const it = items.find(i => normKey(i.codigo) === key && i.localizacao === loc);
+function openEdit(key) {
+  const it = items.find(i => normKey(i.codigo) === key);
   if (!it) return;
   editingKey = key;
-  editingLoc = loc;
   $('#editCodigo').value = it.codigo;
   $('#editDesc').value = lookupDesc(it.codigo) || 'Produto não cadastrado';
   $('#editQtd').value = it.qtd;
   $('#editLocal').value = it.localizacao;
-  $('#modal').classList.add('open');
+  $('#modalEdit').classList.add('open');
   setTimeout(() => $('#editQtd').focus(), 50);
 }
-function closeEdit() { $('#modal').classList.remove('open'); editingKey = null; editingLoc = null; }
-async function saveEdit() {
+function closeEdit() { $('#modalEdit').classList.remove('open'); editingKey = null; }
+function saveEdit() {
   if (!editingKey) return;
-  const it = items.find(i => normKey(i.codigo) === editingKey && i.localizacao === editingLoc);
+  const it = items.find(i => normKey(i.codigo) === editingKey);
   if (!it) return;
-  
-  const newQtd = Number($('#editQtd').value) || 0;
-  const newLoc = norm($('#editLocal').value);
-  
-  // Se mudou a localização, precisamos deletar o registro antigo e inserir o novo
-  // devido ao funcionamento do upsert com a nova constraint (codigo, localizacao)
-  if (newLoc !== editingLoc) {
-    await deleteItemDB(editingKey, editingLoc);
-  }
-
-  const ok = await upsertItemDB({ codigo: editingKey, qtd: newQtd, localizacao: newLoc });
-  if (ok) { await loadItemsFromDB(); closeEdit(); toast('Item atualizado.', 'success'); }
+  it.qtd = Number($('#editQtd').value) || 0;
+  it.localizacao = norm($('#editLocal').value);
+  it.updatedAt = Date.now();
+  saveItems(); render(it.codigo); closeEdit();
+  cloudUpsert(it);
+  toast('Item atualizado.', 'success');
 }
-async function deleteItem(key, loc) {
-  const it = items.find(i => normKey(i.codigo) === key && i.localizacao === loc);
+function deleteItem(key) {
+  const it = items.find(i => normKey(i.codigo) === key);
   if (!it) return;
-  if (!confirm(`Excluir o item "${it.codigo}" na localização "${loc}"?`)) return;
-  const ok = await deleteItemDB(it.codigo, it.localizacao);
-  if (ok) {
-    await loadItemsFromDB();
-    toast('Item excluído.', 'warning');
-  }
+  if (!confirm(`Excluir o item "${it.codigo}"?`)) return;
+  items = items.filter(i => normKey(i.codigo) !== key);
+  saveItems(); render();
+  cloudDelete(it.codigo);
+  toast('Item excluído.', 'warning');
 }
 
-/* ---------- Bulk import ---------- */
+/* ---------- Bulk ---------- */
 function parseBulkText(text) {
-  // Accepts tab-separated, semicolon-separated or comma-separated
   const lines = text.split(/\r?\n/).filter(l => l.trim().length);
   if (!lines.length) return [];
-  // Detect separator
   const first = lines[0];
-  const sep = first.includes('\t') ? '\t' :
-              first.includes(';')  ? ';'  :
-              first.includes(',')  ? ','  : '\t';
-  // Skip header if first row looks like header (non-numeric qty)
-  const parsed = lines.map(l => {
-    // simple split — for clean paste from Excel this is enough
-    if (sep === ',') return parseCSV(l)[0] || [];
-    return l.split(sep);
-  });
+  const sep = first.includes('\t') ? '\t' : first.includes(';') ? ';' : first.includes(',') ? ',' : '\t';
+  const splitLine = (l) => {
+    if (sep !== ',') return l.split(sep);
+    // simple CSV split honoring quotes for one line
+    const out = []; let cur = ''; let inQ = false;
+    for (let i=0;i<l.length;i++){
+      const c = l[i];
+      if (inQ) { if (c === '"' && l[i+1] === '"') { cur += '"'; i++; } else if (c === '"') inQ = false; else cur += c; }
+      else    { if (c === '"') inQ = true; else if (c === ',') { out.push(cur); cur=''; } else cur += c; }
+    }
+    out.push(cur); return out;
+  };
+  const parsed = lines.map(splitLine);
   let start = 0;
   if (parsed[0] && parsed[0].length >= 2) {
     const q = norm(parsed[0][1]);
-    if (q && isNaN(Number(q.replace(',','.')))) start = 1;
+    if (q && isNaN(Number(q.toString().replace(',','.')))) start = 1;
   }
   const out = [];
   for (let i = start; i < parsed.length; i++) {
-    const r = parsed[i];
-    if (!r || !r.length) continue;
+    const r = parsed[i]; if (!r || !r.length) continue;
     const codigo = norm(r[0]);
-    const qtd   = Number(norm(r[1]).replace(',','.')) || 0;
+    const qtd   = Number(norm(r[1]).toString().replace(',','.')) || 0;
     const local = norm(r[2]);
     if (!codigo) continue;
     out.push({ codigo, qtd, localizacao: local });
@@ -1166,25 +1063,23 @@ function updateBulkPreview() {
 
 async function doBulkImport() {
   if (!bulkRows.length) return;
-  
-  // Preparar dados para o Supabase (bulk upsert)
-  const dataToUpsert = bulkRows.map(r => ({
-    codigo: r.codigo,
-    qtd: Number(r.qtd) || 0,
-    localizacao: r.localizacao || '',
-    updated_at: new Date().toISOString()
-  }));
-
-  const { error } = await sb.from('estoque').upsert(dataToUpsert, { onConflict: 'codigo,localizacao' });
-
-  if (error) {
-    toast('Erro na importação em lote: ' + error.message, 'error');
-    return;
+  const payload = [];
+  for (const r of bulkRows) {
+    addOrUpdateItem(r);
+    payload.push({
+      codigo: r.codigo,
+      qtd: Number(r.qtd)||0,
+      localizacao: r.localizacao || '',
+      updated_at: new Date().toISOString()
+    });
   }
-
-  await loadItemsFromDB();
-  toast(`${bulkRows.length} item(ns) importado(s) com sucesso.`, 'success');
-  
+  // envio em lote para a nuvem
+  if (supa && payload.length) {
+    try { await supa.from('items').upsert(payload, { onConflict: 'codigo' }); }
+    catch (e) { toast('Erro nuvem: ' + e.message, 'error'); }
+  }
+  render();
+  toast(`${bulkRows.length} item(ns) importado(s).`, 'success');
   bulkRows = [];
   $('#bulkPaste').value = '';
   $('#fileName').textContent = '';
@@ -1195,7 +1090,7 @@ async function doBulkImport() {
 async function handleFile(file) {
   if (!file) return;
   $('#fileName').textContent = file.name;
-  const ext = file.name.split('.').pop().toLowerCase();
+  const ext = (file.name.split('.').pop() || '').toLowerCase();
   try {
     if (ext === 'csv') {
       const text = await file.text();
@@ -1213,19 +1108,16 @@ async function handleFile(file) {
         if (q && isNaN(Number(q.toString().replace(',','.')))) start = 1;
       }
       for (let i = start; i < rows.length; i++) {
-        const r = rows[i];
-        if (!r) continue;
-        const codigo = norm(r[0]);
-        if (!codigo) continue;
+        const r = rows[i]; if (!r) continue;
+        const codigo = norm(r[0]); if (!codigo) continue;
         const qtd   = Number(norm(r[1]).toString().replace(',','.')) || 0;
         const local = norm(r[2]);
         bulkRows.push({ codigo, qtd, localizacao: local });
       }
-      // Also reflect in textarea as TSV for preview
       $('#bulkPaste').value = bulkRows.map(r => `${r.codigo}\t${r.qtd}\t${r.localizacao}`).join('\n');
     }
     updateBulkPreview();
-    toast(`${bulkRows.length} linha(s) detectada(s). Revise e clique "Importar todos".`, 'success');
+    toast(`${bulkRows.length} linha(s) detectada(s). Clique "Importar todos".`, 'success');
   } catch (e) {
     toast('Erro ao ler arquivo: ' + e.message, 'error');
   }
@@ -1249,31 +1141,37 @@ function exportXlsx() {
   toast('Arquivo exportado.', 'success');
 }
 
-/* ---------- Event bindings ---------- */
+/* ---------- Tabs (versão robusta) ---------- */
+function activateTab(name) {
+  $$('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
+  $$('.tab-panel').forEach(p => p.classList.toggle('active', p.dataset.panel === name));
+  if (name === 'bulk') {
+    // Garante re-parse do textarea caso o usuário tenha colado
+    setTimeout(() => $('#bulkPaste') && $('#bulkPaste').focus({ preventScroll: true }), 10);
+  }
+}
+
+/* ---------- Bind ---------- */
 function bind() {
-  // Tabs
-  $$('.tab').forEach(t => t.addEventListener('click', () => {
-    $$('.tab').forEach(x => x.classList.remove('active'));
-    $$('.tab-content').forEach(x => x.classList.remove('active'));
-    t.classList.add('active');
-    document.querySelector(`.tab-content[data-content="${t.dataset.tab}"]`).classList.add('active');
-  }));
+  // Tabs — delegation
+  document.addEventListener('click', (e) => {
+    const btn = e.target.closest('.tab-btn');
+    if (!btn) return;
+    e.preventDefault();
+    activateTab(btn.dataset.tab);
+  });
 
   // Single form
   $('#codigo').addEventListener('input', onCodigoInput);
-  $('#formSingle').addEventListener('submit', async e => {
+  $('#formSingle').addEventListener('submit', e => {
     e.preventDefault();
     const codigo = norm($('#codigo').value);
     const qtd    = $('#qtd').value;
     const local  = norm($('#local').value);
     if (!codigo) return;
-    const res = addOrUpdateItemLocal({ codigo, qtd, localizacao: local });
-    const ok = await upsertItemDB({ codigo, qtd, localizacao: local });
-    if (ok) {
-      await loadItemsFromDB();
-      render(codigo);
-      toast(res.updated ? `Item "${codigo}" atualizado.` : `Item "${codigo}" adicionado.`, 'success');
-    }
+    const res = addOrUpdateItem({ codigo, qtd, localizacao: local });
+    render(codigo);
+    toast(res.updated ? `Item "${codigo}" atualizado.` : `Item "${codigo}" adicionado.`, 'success');
     $('#codigo').value = ''; $('#qtd').value = ''; $('#local').value = '';
     onCodigoInput();
     $('#codigo').focus();
@@ -1311,7 +1209,6 @@ function bind() {
 
   // File drop
   const drop = $('#fileDrop');
-  drop.addEventListener('click', () => $('#fileInput').click());
   $('#fileInput').addEventListener('change', e => handleFile(e.target.files[0]));
   drop.addEventListener('dragover', e => { e.preventDefault(); drop.classList.add('drag'); });
   drop.addEventListener('dragleave', () => drop.classList.remove('drag'));
@@ -1320,14 +1217,41 @@ function bind() {
     if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
   });
 
-  // Modal
+  // Modais
   $('#btnCancelEdit').addEventListener('click', closeEdit);
   $('#btnSaveEdit').addEventListener('click', saveEdit);
-  $('#modal').addEventListener('click', e => { if (e.target === $('#modal')) closeEdit(); });
+  $('#modalEdit').addEventListener('click', e => { if (e.target === $('#modalEdit')) closeEdit(); });
 
-  // Header actions
+  $('#btnSettings').addEventListener('click', () => {
+    const cfg = loadSupaConfig() || {};
+    $('#supaUrl').value = cfg.url || '';
+    $('#supaKey').value = cfg.key || '';
+    $('#modalSettings').classList.add('open');
+  });
+  $('#btnCancelSettings').addEventListener('click', () => $('#modalSettings').classList.remove('open'));
+  $('#modalSettings').addEventListener('click', e => { if (e.target === $('#modalSettings')) $('#modalSettings').classList.remove('open'); });
+  $('#btnSaveSettings').addEventListener('click', async () => {
+    const url = norm($('#supaUrl').value);
+    const key = norm($('#supaKey').value);
+    if (!url || !key) { toast('Informe a URL e a anon key.', 'warning'); return; }
+    saveSupaConfig({ url, key });
+    const ok = await connectSupabase({ url, key });
+    if (ok) $('#modalSettings').classList.remove('open');
+  });
+  $('#btnDisconnect').addEventListener('click', () => { disconnectSupabase(); $('#modalSettings').classList.remove('open'); });
+  $('#btnPushLocal').addEventListener('click', pushAllLocal);
+
+  // Header
   $('#btnReload').addEventListener('click', fetchSheet);
   $('#btnExport').addEventListener('click', exportXlsx);
+
+  // ESC fecha modais
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') {
+      $('#modalEdit').classList.remove('open');
+      $('#modalSettings').classList.remove('open');
+    }
+  });
 }
 
 /* ---------- Init ---------- */
@@ -1335,17 +1259,16 @@ async function init() {
   bind();
   loadCachedSheet();
   render();
-  
-  // Carrega DB em paralelo
-  loadItemsFromDB();
-  
-  // Primeira tentativa de sincronização
+
+  // Planilha
   fetchSheet();
-  
-  // Sincronização periódica (cada 10 minutos)
-  setInterval(() => {
-    fetchSheet();
-  }, 10 * 60 * 1000);
+  setInterval(fetchSheet, SHEET_REFRESH_MS);
+
+  // Supabase (se configurado)
+  const cfg = loadSupaConfig();
+  if (cfg && cfg.url && cfg.key) {
+    await connectSupabase(cfg);
+  }
 }
 init();
 </script>
