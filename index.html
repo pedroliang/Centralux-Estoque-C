@@ -568,13 +568,13 @@ async function upsertItemDB(item) {
     qtd: Number(item.qtd) || 0,
     localizacao: item.localizacao || '',
     updated_at: new Date().toISOString()
-  }, { onConflict: 'codigo' });
+  }, { onConflict: 'codigo, localizacao' });
   if (error) { toast('Erro ao salvar: ' + error.message, 'error'); return false; }
   return true;
 }
 
-async function deleteItemDB(codigo) {
-  const { error } = await sb.from('estoque').delete().eq('codigo', codigo);
+async function deleteItemDB(codigo, localizacao) {
+  const { error } = await sb.from('estoque').delete().eq('codigo', codigo).eq('localizacao', localizacao);
   if (error) { toast('Erro ao excluir: ' + error.message, 'error'); return false; }
   return true;
 }
@@ -733,13 +733,22 @@ function onCodigoInput() {
     return;
   }
   const desc = lookupDesc(code);
+  const existing = items.filter(it => normKey(it.codigo) === normKey(code));
+  
+  let html = desc ? `<strong>${escapeHtml(desc)}</strong>` : 'Produto não cadastrado';
+  
+  if (existing.length > 0) {
+    const locs = existing.map(it => it.localizacao).join(', ');
+    html += `<div style="margin-top:4px; font-size:11px; color:var(--warning)">⚠️ Já está em: ${escapeHtml(locs)}</div>`;
+  }
+
   if (desc) {
     box.className = 'desc-display found';
-    txt.innerHTML = `<strong>${escapeHtml(desc)}</strong>`;
-    box.querySelector('.pill').textContent = 'Encontrado';
+    txt.innerHTML = html;
+    box.querySelector('.pill').textContent = existing.length > 0 ? 'Duplicado' : 'Encontrado';
   } else {
     box.className = 'desc-display notfound';
-    txt.textContent = 'Produto não cadastrado';
+    txt.innerHTML = html;
     box.querySelector('.pill').textContent = 'Não encontrado';
   }
 }
@@ -818,16 +827,23 @@ function render(highlightCode = null) {
         ? `<span class="desc-cell">${escapeHtml(desc)}</span>`
         : `<span class="desc-cell none">Produto não cadastrado</span>`;
       const when = it.updatedAt ? new Date(it.updatedAt).toLocaleString('pt-BR', {day:'2-digit', month:'2-digit', year:'2-digit', hour:'2-digit', minute:'2-digit'}) : '';
+      
+      const isDup = items.filter(x => normKey(x.codigo) === normKey(it.codigo)).length > 1;
+      const rowStyle = isDup ? 'border-left: 3px solid var(--warning);' : '';
+
       return `
-      <tr data-code="${escapeHtml(normKey(it.codigo))}">
-        <td class="code-cell">${escapeHtml(it.codigo)}</td>
+      <tr data-code="${escapeHtml(normKey(it.codigo))}" style="${rowStyle}">
+        <td class="code-cell">
+          ${escapeHtml(it.codigo)}
+          ${isDup ? '<span title="Este código possui múltiplas localizações" style="cursor:help; margin-left:4px;">⚠️</span>' : ''}
+        </td>
         <td>${descHtml}</td>
         <td style="text-align:center"><span class="qty-badge">${Number(it.qtd)||0}</span></td>
         <td>${it.localizacao ? `<span class="loc-chip">${escapeHtml(it.localizacao)}</span>` : ''}</td>
         <td style="color:var(--text-dim); font-size:12px;">${when}</td>
         <td class="actions-cell">
-          <button class="btn-icon" data-edit="${escapeHtml(normKey(it.codigo))}" title="Editar">✏️</button>
-          <button class="btn-icon" data-del="${escapeHtml(normKey(it.codigo))}" title="Excluir">🗑️</button>
+          <button class="btn-icon" data-edit="${escapeHtml(normKey(it.codigo))}" data-loc="${escapeHtml(it.localizacao)}" title="Editar">✏️</button>
+          <button class="btn-icon" data-del="${escapeHtml(normKey(it.codigo))}" data-loc="${escapeHtml(it.localizacao)}" title="Excluir">🗑️</button>
         </td>
       </tr>`;
     }).join('');
@@ -848,8 +864,8 @@ function render(highlightCode = null) {
   }
 
   // Bindings
-  tbody.querySelectorAll('[data-edit]').forEach(b => b.addEventListener('click', () => openEdit(b.dataset.edit)));
-  tbody.querySelectorAll('[data-del]').forEach(b => b.addEventListener('click', () => deleteItem(b.dataset.del)));
+  tbody.querySelectorAll('[data-edit]').forEach(b => b.addEventListener('click', () => openEdit(b.dataset.edit, b.dataset.loc)));
+  tbody.querySelectorAll('[data-del]').forEach(b => b.addEventListener('click', () => deleteItem(b.dataset.del, b.dataset.loc)));
 }
 
 function escapeHtml(s) {
@@ -858,10 +874,12 @@ function escapeHtml(s) {
 
 /* ---------- Edit / delete ---------- */
 let editingKey = null;
-function openEdit(key) {
-  const it = items.find(i => normKey(i.codigo) === key);
+let editingLoc = null;
+function openEdit(key, loc) {
+  const it = items.find(i => normKey(i.codigo) === key && i.localizacao === loc);
   if (!it) return;
   editingKey = key;
+  editingLoc = loc;
   $('#editCodigo').value = it.codigo;
   $('#editDesc').value = lookupDesc(it.codigo) || 'Produto não cadastrado';
   $('#editQtd').value = it.qtd;
@@ -869,25 +887,31 @@ function openEdit(key) {
   $('#modal').classList.add('open');
   setTimeout(() => $('#editQtd').focus(), 50);
 }
-function closeEdit() { $('#modal').classList.remove('open'); editingKey = null; }
+function closeEdit() { $('#modal').classList.remove('open'); editingKey = null; editingLoc = null; }
 async function saveEdit() {
   if (!editingKey) return;
-  const it = items.find(i => normKey(i.codigo) === editingKey);
+  const it = items.find(i => normKey(i.codigo) === editingKey && i.localizacao === editingLoc);
   if (!it) return;
-  it.qtd = Number($('#editQtd').value) || 0;
-  it.localizacao = norm($('#editLocal').value);
-  it.updatedAt = Date.now();
-  const ok = await upsertItemDB(it);
-  if (ok) { render(it.codigo); closeEdit(); toast('Item atualizado.', 'success'); }
+  
+  const newQtd = Number($('#editQtd').value) || 0;
+  const newLoc = norm($('#editLocal').value);
+  
+  // Se mudou a localização, precisamos deletar o registro antigo e inserir o novo
+  // devido ao funcionamento do upsert com a nova constraint (codigo, localizacao)
+  if (newLoc !== editingLoc) {
+    await deleteItemDB(editingKey, editingLoc);
+  }
+
+  const ok = await upsertItemDB({ codigo: editingKey, qtd: newQtd, localizacao: newLoc });
+  if (ok) { await loadItemsFromDB(); closeEdit(); toast('Item atualizado.', 'success'); }
 }
-async function deleteItem(key) {
-  const it = items.find(i => normKey(i.codigo) === key);
+async function deleteItem(key, loc) {
+  const it = items.find(i => normKey(i.codigo) === key && i.localizacao === loc);
   if (!it) return;
-  if (!confirm(`Excluir o item "${it.codigo}"?`)) return;
-  const ok = await deleteItemDB(it.codigo);
+  if (!confirm(`Excluir o item "${it.codigo}" na localização "${loc}"?`)) return;
+  const ok = await deleteItemDB(it.codigo, it.localizacao);
   if (ok) {
-    items = items.filter(i => normKey(i.codigo) !== key);
-    render();
+    await loadItemsFromDB();
     toast('Item excluído.', 'warning');
   }
 }
@@ -948,7 +972,7 @@ async function doBulkImport() {
     updated_at: new Date().toISOString()
   }));
 
-  const { error } = await sb.from('estoque').upsert(dataToUpsert, { onConflict: 'codigo' });
+  const { error } = await sb.from('estoque').upsert(dataToUpsert, { onConflict: 'codigo, localizacao' });
 
   if (error) {
     toast('Erro na importação em lote: ' + error.message, 'error');
