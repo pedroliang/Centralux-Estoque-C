@@ -1,0 +1,9 @@
+node_modules/
+temp.zip
+xlsx_temp/
+items.json
+items_clean.json
+parse_xlsx.js
+parse_xlsx_pro.js
+package-lock.json
+package.json
